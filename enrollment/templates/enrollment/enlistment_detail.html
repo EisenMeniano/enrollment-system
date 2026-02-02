@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Enlistment #{{ enlistment.id }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Enlistment #{{ enlistment.id }}</h2>
+  <p><strong>Student:</strong> {{ enlistment.student.username }}</p>
+  <p><strong>Term:</strong> {{ enlistment.school_year }} - {{ enlistment.semester }}</p>
+  <p><strong>Status:</strong> <span class="pill">{{ enlistment.get_status_display }}</span></p>
+  {% if enlistment.hold_reason %}
+    <p><strong>Note/Reason:</strong> {{ enlistment.hold_reason }}</p>
+  {% endif %}
+
+  {% if enlistment.next_subjects.all %}
+    <h3>Subjects for Next Semester</h3>
+    <ul>
+      {% for s in enlistment.next_subjects.all %}
+        <li>{{ s.subject.code }} - {{ s.subject.title }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div style="margin-top:10px;">
+    {% if user.role == "ADVISER" and enlistment.status == "SUBMITTED" %}
+      <a class="btn" href="{% url 'enrollment:adviser_preapprove' enlistment.id %}">Adviser Pre-Approve</a>
+      <a class="btn secondary" href="{% url 'enrollment:adviser_return' enlistment.id %}">Return for Revision</a>
+    {% endif %}
+
+    {% if user.role == "ADVISER" and enlistment.status == "RETURNED" %}
+      <a class="btn" href="{% url 'enrollment:adviser_preapprove' enlistment.id %}">Re-Submit to Finance</a>
+      <a class="btn secondary" href="{% url 'enrollment:adviser_return' enlistment.id %}">Update Return Note</a>
+    {% endif %}
+
+    {% if user.role == "FINANCE" and enlistment.status == "FINANCE_REVIEW" %}
+      <a class="btn" href="{% url 'enrollment:finance_review' enlistment.id %}">Run Finance Check</a>
+    {% endif %}
+
+    {% if user.role == "ADVISER" and enlistment.status == "FINANCE_APPROVED" %}
+      <a class="btn" href="{% url 'enrollment:adviser_final_approve' enlistment.id %}">Final Approve + Add Subjects</a>
+      <a class="btn secondary" href="{% url 'enrollment:adviser_return' enlistment.id %}">Return / Adjust</a>
+    {% endif %}
+
+    {% if user.role == "STUDENT" and enlistment.status == "APPROVED_FOR_PAYMENT" %}
+      <a class="btn" href="{% url 'enrollment:student_pay' enlistment.id %}">Proceed to Payment</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

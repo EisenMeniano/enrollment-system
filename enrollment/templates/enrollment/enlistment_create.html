@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Apply for Enlistment{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Apply for Enlistment</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn" type="submit">Submit</button>
+    <a class="btn secondary" href="{% url 'enrollment:student_dashboard' %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

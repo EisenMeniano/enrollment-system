@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Login</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn" type="submit">Login</button>
+  </form>
+  <p style="margin-top:10px;color:#555;font-size:13px;">
+    Tip: create users in <code>/admin</code> and set their <strong>role</strong>.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Gunicorn for enrollsys
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/enrollsys
+EnvironmentFile=/var/www/enrollsys/.env
+ExecStart=/var/www/enrollsys/.venv/bin/gunicorn enrollsys.wsgi:application -c /var/www/enrollsys/gunicorn.conf.py
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

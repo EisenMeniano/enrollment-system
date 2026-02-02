@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Return for Revision{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Return Enlistment #{{ enlistment.id }} for Revision</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn" type="submit">Return</button>
+    <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

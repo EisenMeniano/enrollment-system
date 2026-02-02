@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Payment{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Proceed to Payment</h2>
+  <p><strong>Enlistment:</strong> #{{ enlistment.id }} ({{ enlistment.school_year }} - {{ enlistment.semester }})</p>
+  <p>For MVP, this simply marks the enlistment as <strong>ENROLLED</strong>. Later you can integrate a payment gateway.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn" type="submit">Mark as Paid</button>
+    <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>
+  </form>
+</div>
+{% endblock %}
