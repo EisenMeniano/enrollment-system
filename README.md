@@ -35,6 +35,22 @@ Open: http://127.0.0.1:8000/
 - Student submits enlistment.
 - Adviser pre-approves -> Finance checks -> Adviser final approves and adds subjects -> Student pays.
 
+## 2.5) Share existing accounts (fixture export/import)
+If you want to share existing users/accounts with a teammate without committing the whole database, use fixtures.
+
+Export (your machine):
+```bash
+python manage.py dumpdata auth --indent 2 > data_auth.json
+python manage.py dumpdata accounts --indent 2 > data_accounts.json
+```
+
+Commit the two `data_*.json` files, then on your teammate's machine:
+```bash
+python manage.py migrate
+python manage.py loaddata data_auth.json
+python manage.py loaddata data_accounts.json
+```
+
 ## 3) Statuses (workflow)
 - SUBMITTED (Student applied)
 - RETURNED (Adviser returned for revision)
