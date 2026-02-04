@@ -18,7 +18,9 @@ urlpatterns = [
     # Finance
     path("finance/", views.finance_dashboard, name="finance_dashboard"),
     path("finance/review/<int:pk>/", views.finance_review_view, name="finance_review"),
+    path("finance/amount/<int:pk>/", views.finance_set_amount_view, name="finance_set_amount"),
 
     # Shared
     path("enlistment/<int:pk>/", views.enlistment_detail, name="enlistment_detail"),
+    path("history/", views.history_log, name="history_log"),
 ]

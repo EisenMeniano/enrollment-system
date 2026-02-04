@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}History Log{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>History Log</h2>
+  <p>Recent enrollment actions (latest 200).</p>
+  <div class="actions">
+    {% if user.role == "ADVISER" %}
+      <a class="btn gray" href="{% url 'enrollment:adviser_dashboard' %}">Back to Adviser</a>
+    {% elif user.role == "FINANCE" %}
+      <a class="btn gray" href="{% url 'enrollment:finance_dashboard' %}">Back to Finance</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Actor</th>
+        <th>Student</th>
+        <th>Term</th>
+        <th>Action</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td data-label="Time">{{ log.created_at|date:"Y-m-d H:i" }}</td>
+        <td data-label="Actor">{{ log.actor.username|default:"System" }}</td>
+        <td data-label="Student">
+          {% if log.enlistment %}
+            {{ log.enlistment.student.username }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td data-label="Term">
+          {% if log.enlistment %}
+            {{ log.enlistment.school_year }} - {{ log.enlistment.semester }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td data-label="Action"><span class="pill">{{ log.get_action_display }}</span></td>
+        <td data-label="Message">{{ log.message }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No history yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

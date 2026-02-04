@@ -11,6 +11,36 @@ class Subject(models.Model):
     def __str__(self):
         return f"{self.code} - {self.title}"
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+class SchoolYear(models.Model):
+    label = models.CharField(max_length=20, unique=True)  # e.g. 2025-2026
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-label"]
+
+    def __str__(self):
+        return self.label
+
+class Semester(models.Model):
+    name = models.CharField(max_length=20, unique=True)  # e.g. 1st, 2nd, Summer
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
 class StudentFinanceAccount(models.Model):
     student = models.OneToOneField(User, on_delete=models.CASCADE, related_name="finance_account")
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -45,6 +75,9 @@ class Enlistment(models.Model):
         REJECTED = "REJECTED", "Rejected"
 
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="enlistments")
+    category = models.ForeignKey(
+        Category, on_delete=models.PROTECT, null=True, blank=True, related_name="enlistments"
+    )
     school_year = models.CharField(max_length=20)
     semester = models.CharField(max_length=20)
     status = models.CharField(max_length=40, choices=Status.choices, default=Status.SUBMITTED)
@@ -95,3 +128,27 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.enlistment} payment={self.status}"
+
+class HistoryLog(models.Model):
+    class Action(models.TextChoices):
+        SUBMITTED = "SUBMITTED", "Submitted"
+        RETURNED = "RETURNED", "Returned for Revision"
+        PREAPPROVED = "PREAPPROVED", "Adviser Pre-Approved"
+        FINANCE_REVIEWED = "FINANCE_REVIEWED", "Finance Reviewed"
+        FINANCE_HELD = "FINANCE_HELD", "Finance Hold"
+        AMOUNT_SET = "AMOUNT_SET", "Amount Set"
+        FINAL_APPROVED = "FINAL_APPROVED", "Adviser Final Approved"
+        PAYMENT_RECORDED = "PAYMENT_RECORDED", "Payment Recorded"
+        ENROLLED = "ENROLLED", "Enrolled"
+
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="history_actions")
+    enlistment = models.ForeignKey(Enlistment, on_delete=models.SET_NULL, null=True, blank=True, related_name="history_logs")
+    action = models.CharField(max_length=50, choices=Action.choices)
+    message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_action_display()} by {self.actor} at {self.created_at}"

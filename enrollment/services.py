@@ -1,6 +1,14 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from .models import Enlistment, Payment, EnlistmentSubject, Subject
+from .models import Enlistment, Payment, EnlistmentSubject, Subject, HistoryLog
+
+def log_history(actor, enlistment, action, message=""):
+    HistoryLog.objects.create(
+        actor=actor,
+        enlistment=enlistment,
+        action=action,
+        message=message or "",
+    )
 
 def require_role(user, roles):
     if not user.is_authenticated or user.role not in roles:
@@ -21,7 +29,7 @@ def can_finance_approve(enlistment):
     return True, ""
 
 @transaction.atomic
-def student_submit_enlistment(student, school_year, semester, notes=""):
+def student_submit_enlistment(student, school_year, semester, category, notes=""):
     existing = Enlistment.objects.filter(
         student=student,
         school_year=school_year,
@@ -33,10 +41,17 @@ def student_submit_enlistment(student, school_year, semester, notes=""):
         )
     enlistment = Enlistment.objects.create(
         student=student,
+        category=category,
         school_year=school_year,
         semester=semester,
         status=Enlistment.Status.SUBMITTED,
         notes=notes,
+    )
+    log_history(
+        actor=student,
+        enlistment=enlistment,
+        action=HistoryLog.Action.SUBMITTED,
+        message=f"Submitted enlistment for {school_year} {semester}.",
     )
     return enlistment
 
@@ -49,6 +64,12 @@ def adviser_preapprove(user, enlistment):
     enlistment.hold_reason = ""
     enlistment.adviser_preapproved_by = user
     enlistment.save(update_fields=["status", "hold_reason", "adviser_preapproved_by", "updated_at"])
+    log_history(
+        actor=user,
+        enlistment=enlistment,
+        action=HistoryLog.Action.PREAPPROVED,
+        message="Pre-approved and forwarded to Admin/Finance.",
+    )
     return enlistment
 
 @transaction.atomic
@@ -59,6 +80,12 @@ def adviser_return_for_revision(user, enlistment, reason):
     enlistment.status = Enlistment.Status.RETURNED
     enlistment.hold_reason = reason
     enlistment.save(update_fields=["status", "hold_reason", "updated_at"])
+    log_history(
+        actor=user,
+        enlistment=enlistment,
+        action=HistoryLog.Action.RETURNED,
+        message=reason,
+    )
     return enlistment
 
 @transaction.atomic
@@ -81,6 +108,20 @@ def finance_review(user, enlistment, approve_if_ok=True):
         enlistment.hold_reason = reason
 
     enlistment.save(update_fields=["status", "hold_reason", "finance_checked_by", "updated_at"])
+    if enlistment.status == Enlistment.Status.FINANCE_APPROVED:
+        log_history(
+            actor=user,
+            enlistment=enlistment,
+            action=HistoryLog.Action.FINANCE_REVIEWED,
+            message="Cleared by Admin/Finance.",
+        )
+    else:
+        log_history(
+            actor=user,
+            enlistment=enlistment,
+            action=HistoryLog.Action.FINANCE_HELD,
+            message=enlistment.hold_reason,
+        )
     return enlistment
 
 @transaction.atomic
@@ -101,6 +142,12 @@ def adviser_final_approve_and_add_subjects(user, enlistment, subject_ids):
     enlistment.adviser_final_approved_by = user
     enlistment.hold_reason = ""
     enlistment.save(update_fields=["status", "adviser_final_approved_by", "hold_reason", "updated_at"])
+    log_history(
+        actor=user,
+        enlistment=enlistment,
+        action=HistoryLog.Action.FINAL_APPROVED,
+        message="Final approval complete. Subjects added.",
+    )
 
     # Create payment record (amount is placeholder; fees can be computed later)
     Payment.objects.update_or_create(
@@ -123,4 +170,30 @@ def student_mark_paid(student, enlistment, reference=""):
 
     enlistment.status = Enlistment.Status.ENROLLED
     enlistment.save(update_fields=["status", "updated_at"])
+    log_history(
+        actor=student,
+        enlistment=enlistment,
+        action=HistoryLog.Action.PAYMENT_RECORDED,
+        message=f"Payment recorded. Ref: {reference}" if reference else "Payment recorded.",
+    )
+    log_history(
+        actor=student,
+        enlistment=enlistment,
+        action=HistoryLog.Action.ENROLLED,
+        message="Enrollment confirmed.",
+    )
     return enlistment
+
+@transaction.atomic
+def finance_set_amount(user, enlistment, amount):
+    require_role(user, ["FINANCE"])
+    payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
+    payment.amount = amount
+    payment.save(update_fields=["amount"])
+    log_history(
+        actor=user,
+        enlistment=enlistment,
+        action=HistoryLog.Action.AMOUNT_SET,
+        message=f"Set amount to {amount}.",
+    )
+    return payment

@@ -4,8 +4,13 @@
 <div class="card">
   <h2>Enlistment #{{ enlistment.id }}</h2>
   <p><strong>Student:</strong> {{ enlistment.student.username }}</p>
+  <p><strong>Category:</strong> {{ enlistment.category.name|default:"—" }}</p>
   <p><strong>Term:</strong> {{ enlistment.school_year }} - {{ enlistment.semester }}</p>
   <p><strong>Status:</strong> <span class="pill">{{ enlistment.get_status_display }}</span></p>
+  {% if enlistment.payment %}
+    <p><strong>Amount Due:</strong> {{ enlistment.payment.amount }}</p>
+    <p><strong>Payment Status:</strong> {{ enlistment.payment.get_status_display }}</p>
+  {% endif %}
   {% if enlistment.hold_reason %}
     <p><strong>Note/Reason:</strong> {{ enlistment.hold_reason }}</p>
   {% endif %}
@@ -32,6 +37,16 @@
 
     {% if user.role == "FINANCE" and enlistment.status == "FINANCE_REVIEW" %}
       <a class="btn" href="{% url 'enrollment:finance_review' enlistment.id %}">Run Finance Check</a>
+    {% endif %}
+
+    {% if user.role == "FINANCE" and enlistment.status == "FINANCE_APPROVED" %}
+      <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
+    {% endif %}
+    {% if user.role == "FINANCE" and enlistment.status == "APPROVED_FOR_PAYMENT" %}
+      <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
+    {% endif %}
+    {% if user.role == "FINANCE" and enlistment.status == "ENROLLED" %}
+      <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
     {% endif %}
 
     {% if user.role == "ADVISER" and enlistment.status == "FINANCE_APPROVED" %}

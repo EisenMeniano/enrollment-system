@@ -4,8 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
 from accounts.models import User
-from .models import Enlistment
-from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm
+from .models import Enlistment, HistoryLog
+from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm
 from .services import (
     student_submit_enlistment,
     adviser_preapprove,
@@ -13,6 +13,7 @@ from .services import (
     finance_review,
     adviser_final_approve_and_add_subjects,
     student_mark_paid,
+    finance_set_amount,
 )
 
 def role_required(*roles):
@@ -50,8 +51,9 @@ def student_enlistment_create(request):
             try:
                 enlistment = student_submit_enlistment(
                     request.user,
-                    school_year=form.cleaned_data["school_year"],
-                    semester=form.cleaned_data["semester"],
+                    category=form.cleaned_data["category"],
+                    school_year=form.cleaned_data["school_year"].label,
+                    semester=form.cleaned_data["semester"].name,
                     notes=form.cleaned_data.get("notes", ""),
                 )
                 messages.success(request, "Enlistment submitted. Waiting for adviser review.")
@@ -74,6 +76,7 @@ def enlistment_detail(request, pk):
 @role_required("STUDENT")
 def student_pay(request, pk):
     enlistment = get_object_or_404(Enlistment, pk=pk, student=request.user)
+    payment = getattr(enlistment, "payment", None)
     if request.method == "POST":
         form = PaymentForm(request.POST)
         if form.is_valid():
@@ -85,7 +88,7 @@ def student_pay(request, pk):
                 messages.error(request, str(e))
     else:
         form = PaymentForm()
-    return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form})
+    return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form, "payment": payment})
 
 # ---------------------- ADVISER ----------------------
 @login_required
@@ -169,3 +172,35 @@ def finance_review_view(request, pk):
     except Exception as e:
         messages.error(request, str(e))
     return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+@login_required
+@role_required("FINANCE")
+def finance_set_amount_view(request, pk):
+    enlistment = get_object_or_404(Enlistment, pk=pk)
+    if enlistment.status not in [
+        Enlistment.Status.FINANCE_APPROVED,
+        Enlistment.Status.APPROVED_FOR_PAYMENT,
+        Enlistment.Status.ENROLLED,
+    ]:
+        messages.error(request, "Amount can be set only after finance approval.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+    if request.method == "POST":
+        form = FinanceAmountForm(request.POST)
+        if form.is_valid():
+            try:
+                finance_set_amount(request.user, enlistment, form.cleaned_data["amount"])
+                messages.success(request, "Amount updated.")
+                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+            except Exception as e:
+                messages.error(request, str(e))
+    else:
+        payment = getattr(enlistment, "payment", None)
+        form = FinanceAmountForm(initial={"amount": payment.amount if payment else 0})
+    return render(request, "enrollment/finance_set_amount.html", {"enlistment": enlistment, "form": form})
+
+# ---------------------- HISTORY ----------------------
+@login_required
+@role_required("ADVISER", "FINANCE")
+def history_log(request):
+    logs = HistoryLog.objects.select_related("actor", "enlistment", "enlistment__student")[:200]
+    return render(request, "enrollment/history_log.html", {"logs": logs})

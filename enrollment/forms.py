@@ -1,9 +1,19 @@
 from django import forms
-from .models import Subject
+from .models import Subject, Category, SchoolYear, Semester
 
 class EnlistmentCreateForm(forms.Form):
-    school_year = forms.CharField(max_length=20, help_text="e.g., 2025-2026")
-    semester = forms.CharField(max_length=20, help_text="e.g., 1st / 2nd / Summer")
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.filter(is_active=True).order_by("name"),
+        empty_label="Select category",
+    )
+    school_year = forms.ModelChoiceField(
+        queryset=SchoolYear.objects.filter(is_active=True).order_by("-label"),
+        empty_label="Select school year",
+    )
+    semester = forms.ModelChoiceField(
+        queryset=Semester.objects.filter(is_active=True).order_by("name"),
+        empty_label="Select semester",
+    )
     notes = forms.CharField(widget=forms.Textarea, required=False)
 
 class ReturnReasonForm(forms.Form):
@@ -18,3 +28,11 @@ class SubjectSelectForm(forms.Form):
 
 class PaymentForm(forms.Form):
     reference = forms.CharField(max_length=100, required=False, help_text="Optional payment reference / OR number.")
+
+class FinanceAmountForm(forms.Form):
+    amount = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        help_text="Set the amount the student needs to pay.",
+    )

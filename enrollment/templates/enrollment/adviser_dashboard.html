@@ -4,23 +4,27 @@
 <div class="card">
   <h2>Adviser Dashboard</h2>
   <p>Pre-approve submitted requests, then finalize after Admin/Finance clearance.</p>
+  <div class="actions">
+    <a class="btn gray" href="{% url 'enrollment:history_log' %}">History Log</a>
+  </div>
 </div>
 
 <div class="card" style="margin-top:14px;">
   <h3>Pending Adviser Pre-Approval</h3>
   <table>
-    <thead><tr><th>ID</th><th>Student</th><th>Term</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Term</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for e in pending_pre %}
       <tr>
         <td data-label="ID">#{{ e.id }}</td>
         <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Category">{{ e.category.name|default:"—" }}</td>
         <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
         <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
         <td data-label="Actions"><a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="5">None.</td></tr>
+      <tr><td colspan="6">None.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -29,18 +33,19 @@
 <div class="card" style="margin-top:14px;">
   <h3>Pending Final Approval (Finance Cleared)</h3>
   <table>
-    <thead><tr><th>ID</th><th>Student</th><th>Term</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Term</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for e in pending_final %}
       <tr>
         <td data-label="ID">#{{ e.id }}</td>
         <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Category">{{ e.category.name|default:"—" }}</td>
         <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
         <td data-label="Status"><span class="pill green">{{ e.get_status_display }}</span></td>
         <td data-label="Actions"><a class="btn" href="{% url 'enrollment:adviser_final_approve' e.id %}">Finalize</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="5">None.</td></tr>
+      <tr><td colspan="6">None.</td></tr>
       {% endfor %}
     </tbody>
   </table>
