@@ -22,6 +22,15 @@ def can_finance_approve(enlistment):
 
 @transaction.atomic
 def student_submit_enlistment(student, school_year, semester, notes=""):
+    existing = Enlistment.objects.filter(
+        student=student,
+        school_year=school_year,
+        semester=semester,
+    ).exclude(status=Enlistment.Status.REJECTED)
+    if existing.exists():
+        raise ValidationError(
+            "You already submitted an enlistment for this term. You may apply again only if it was rejected."
+        )
     enlistment = Enlistment.objects.create(
         student=student,
         school_year=school_year,

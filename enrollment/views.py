@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
@@ -47,14 +47,17 @@ def student_enlistment_create(request):
     if request.method == "POST":
         form = EnlistmentCreateForm(request.POST)
         if form.is_valid():
-            enlistment = student_submit_enlistment(
-                request.user,
-                school_year=form.cleaned_data["school_year"],
-                semester=form.cleaned_data["semester"],
-                notes=form.cleaned_data.get("notes", ""),
-            )
-            messages.success(request, "Enlistment submitted. Waiting for adviser review.")
-            return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+            try:
+                enlistment = student_submit_enlistment(
+                    request.user,
+                    school_year=form.cleaned_data["school_year"],
+                    semester=form.cleaned_data["semester"],
+                    notes=form.cleaned_data.get("notes", ""),
+                )
+                messages.success(request, "Enlistment submitted. Waiting for adviser review.")
+                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+            except ValidationError as e:
+                form.add_error(None, e.messages[0] if e.messages else "Unable to submit enlistment.")
     else:
         form = EnlistmentCreateForm()
     return render(request, "enrollment/enlistment_create.html", {"form": form})

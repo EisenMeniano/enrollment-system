@@ -13,11 +13,11 @@
     <tbody>
       {% for e in pending %}
       <tr>
-        <td>#{{ e.id }}</td>
-        <td>{{ e.student.username }}</td>
-        <td>{{ e.school_year }} - {{ e.semester }}</td>
-        <td><span class="pill yellow">{{ e.get_status_display }}</span></td>
-        <td>
+        <td data-label="ID">#{{ e.id }}</td>
+        <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+        <td data-label="Status"><span class="pill yellow">{{ e.get_status_display }}</span></td>
+        <td data-label="Actions">
           <a class="btn" href="{% url 'enrollment:finance_review' e.id %}">Check</a>
           <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a>
         </td>
@@ -36,11 +36,11 @@
     <tbody>
       {% for e in holds %}
       <tr>
-        <td>#{{ e.id }}</td>
-        <td>{{ e.student.username }}</td>
-        <td><span class="pill red">{{ e.get_status_display }}</span></td>
-        <td>{{ e.hold_reason }}</td>
-        <td><a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a></td>
+        <td data-label="ID">#{{ e.id }}</td>
+        <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Status"><span class="pill red">{{ e.get_status_display }}</span></td>
+        <td data-label="Reason">{{ e.hold_reason }}</td>
+        <td data-label="Actions"><a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a></td>
       </tr>
       {% empty %}
       <tr><td colspan="5">None.</td></tr>

@@ -3,7 +3,10 @@
 {% block content %}
 <div class="card">
   <h2>Student Dashboard</h2>
-  <p><a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a></p>
+  <p class="subtle">Submit one enlistment per term. If it’s rejected, you can apply again.</p>
+  <div class="actions">
+    <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a>
+  </div>
 </div>
 
 <div class="card" style="margin-top:14px;">
@@ -15,10 +18,10 @@
     <tbody>
       {% for e in enlistments %}
       <tr>
-        <td>#{{ e.id }}</td>
-        <td>{{ e.school_year }} - {{ e.semester }}</td>
-        <td><span class="pill">{{ e.get_status_display }}</span></td>
-        <td>
+        <td data-label="ID">#{{ e.id }}</td>
+        <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+        <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
+        <td data-label="Actions">
           <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">View</a>
           {% if e.status == "APPROVED_FOR_PAYMENT" %}
             <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Payment</a>

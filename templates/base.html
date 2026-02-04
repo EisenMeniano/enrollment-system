@@ -5,24 +5,113 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>{% block title %}Enrollment System{% endblock %}</title>
   <style>
-    body{font-family:system-ui,Arial,sans-serif;margin:0;background:#f6f7fb;color:#111;}
-    header{background:#b40000;color:white;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
-    header a{color:white;text-decoration:none;font-weight:600}
-    main{max-width:1100px;margin:20px auto;padding:0 14px}
-    .card{background:white;border:1px solid #e6e6ef;border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-    .btn{background:#b40000;border:none;color:white;padding:10px 12px;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
-    .btn.secondary{background:#444}
-    .btn.gray{background:#777}
-    .pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;background:#eee}
-    .pill.red{background:#ffe0e0}
-    .pill.green{background:#dff7e6}
-    .pill.yellow{background:#fff2cc}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
-    .msg{padding:10px;border-radius:10px;margin-bottom:10px}
-    .msg.success{background:#dff7e6}
-    .msg.error{background:#ffe0e0}
-    .msg.warning{background:#fff2cc}
+    @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap");
+    :root{
+      --bg:#f5f1ec;
+      --panel:#ffffff;
+      --ink:#1b1b1f;
+      --muted:#5d5d6b;
+      --primary:#b11e2e;
+      --primary-dark:#8b1724;
+      --accent:#0f6b61;
+      --border:#e6e1da;
+      --shadow:0 10px 30px rgba(20,17,12,.08);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:"Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #fff0e4 0%, transparent 60%),
+        radial-gradient(900px 500px at 90% -20%, #e7f5f0 0%, transparent 55%),
+        linear-gradient(180deg, #f7f2ee 0%, #f5f1ec 100%);
+      min-height:100vh;
+    }
+    header{
+      background:linear-gradient(120deg, #b11e2e 0%, #d24c3e 100%);
+      color:white;
+      padding:18px 20px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:var(--shadow);
+    }
+    header a{color:white;text-decoration:none;font-weight:700;letter-spacing:.2px}
+    main{max-width:1100px;margin:26px auto;padding:0 16px}
+    h2,h3{margin-top:0}
+    .subtle{color:var(--muted);margin-top:6px}
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px 20px;
+      box-shadow:var(--shadow);
+    }
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{
+      background:var(--primary);
+      border:none;
+      color:white;
+      padding:10px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:600;
+      transition:transform .05s ease, background .2s ease;
+    }
+    .btn:hover{background:var(--primary-dark)}
+    .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:#2f2f39}
+    .btn.gray{background:#6a6a75}
+    .pill{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      background:#f0ede8;
+      color:#3c3c45;
+      border:1px solid #e5dfd6;
+    }
+    table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden}
+    th,td{padding:12px;border-bottom:1px solid #efe9e1;text-align:left;font-size:14px}
+    th{background:#f7f2ee;font-weight:600}
+    tr:last-child td{border-bottom:none}
+    form p{margin:0 0 12px}
+    label{display:block;font-weight:600;margin-bottom:6px}
+    input, select, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      font:inherit;
+      background:#fff;
+    }
+    textarea{min-height:120px}
+    .helptext{color:var(--muted);font-size:12px}
+    .msg{
+      padding:12px 14px;
+      border-radius:12px;
+      margin-bottom:12px;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    .msg.success{border-color:#cde9d9;background:#eef9f2}
+    .msg.error{border-color:#f4c7c7;background:#fff2f2}
+    .msg.warning{border-color:#f2d9a6;background:#fff6dc}
+    .errorlist{
+      margin:0 0 10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #f4c7c7;
+      background:#fff2f2;
+      color:#7a1f1f;
+      list-style:none;
+    }
     code{background:#f0f0f0;padding:2px 6px;border-radius:6px}
 
     /* logout button styling so it looks like a link */
@@ -37,6 +126,14 @@
       text-decoration:none;
     }
     .link-btn:hover{ text-decoration: underline; }
+
+    @media (max-width:720px){
+      header{flex-direction:column;gap:10px;align-items:flex-start}
+      table, thead, tbody, th, td, tr{display:block}
+      th{display:none}
+      td{border-bottom:1px solid #efe9e1}
+      td::before{content:attr(data-label);font-weight:600;display:block;margin-bottom:4px;color:var(--muted)}
+    }
   </style>
 </head>
 <body>

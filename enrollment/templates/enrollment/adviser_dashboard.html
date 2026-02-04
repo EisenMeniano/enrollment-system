@@ -13,11 +13,11 @@
     <tbody>
       {% for e in pending_pre %}
       <tr>
-        <td>#{{ e.id }}</td>
-        <td>{{ e.student.username }}</td>
-        <td>{{ e.school_year }} - {{ e.semester }}</td>
-        <td><span class="pill">{{ e.get_status_display }}</span></td>
-        <td><a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a></td>
+        <td data-label="ID">#{{ e.id }}</td>
+        <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+        <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
+        <td data-label="Actions"><a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a></td>
       </tr>
       {% empty %}
       <tr><td colspan="5">None.</td></tr>
@@ -33,11 +33,11 @@
     <tbody>
       {% for e in pending_final %}
       <tr>
-        <td>#{{ e.id }}</td>
-        <td>{{ e.student.username }}</td>
-        <td>{{ e.school_year }} - {{ e.semester }}</td>
-        <td><span class="pill green">{{ e.get_status_display }}</span></td>
-        <td><a class="btn" href="{% url 'enrollment:adviser_final_approve' e.id %}">Finalize</a></td>
+        <td data-label="ID">#{{ e.id }}</td>
+        <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+        <td data-label="Status"><span class="pill green">{{ e.get_status_display }}</span></td>
+        <td data-label="Actions"><a class="btn" href="{% url 'enrollment:adviser_final_approve' e.id %}">Finalize</a></td>
       </tr>
       {% empty %}
       <tr><td colspan="5">None.</td></tr>

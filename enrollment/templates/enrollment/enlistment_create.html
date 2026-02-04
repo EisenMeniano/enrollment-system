@@ -3,11 +3,14 @@
 {% block content %}
 <div class="card">
   <h2>Apply for Enlistment</h2>
+  <p class="subtle">You can submit one enlistment per term. If it’s rejected, you can apply again.</p>
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button class="btn" type="submit">Submit</button>
-    <a class="btn secondary" href="{% url 'enrollment:student_dashboard' %}">Cancel</a>
+    <div class="actions">
+      <button class="btn" type="submit">Submit</button>
+      <a class="btn secondary" href="{% url 'enrollment:student_dashboard' %}">Cancel</a>
+    </div>
   </form>
 </div>
 {% endblock %}
