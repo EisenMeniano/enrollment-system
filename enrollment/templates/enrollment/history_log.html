@@ -8,7 +8,7 @@
     {% if user.role == "ADVISER" %}
       <a class="btn gray" href="{% url 'enrollment:adviser_dashboard' %}">Back to Adviser</a>
     {% elif user.role == "FINANCE" %}
-      <a class="btn gray" href="{% url 'enrollment:finance_dashboard' %}">Back to Finance</a>
+      <a class="btn" href="{% url 'enrollment:finance_dashboard' %}">Back to Finance</a>
     {% endif %}
   </div>
 </div>
@@ -35,7 +35,7 @@
         <input id="student" name="student" type="text" value="{{ filter_student }}">
       </div>
       <button class="btn" type="submit">Apply</button>
-      <a class="btn secondary" href="{% url 'enrollment:history_log' %}">Reset</a>
+      <a class="btn" href="{% url 'enrollment:history_log' %}">Reset</a>
     </div>
   </form>
 </div>
