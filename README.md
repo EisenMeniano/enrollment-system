@@ -48,7 +48,31 @@ Open: http://127.0.0.1:8000/
 ## 4) Environment
 See `.env.example`.
 
-## 5) Deployment (gunicorn + nginx)
+## 5) Shared dev database (Docker Postgres)
+If your team wants shared logins, run the database on one host machine and point everyone to it.
+
+Host machine:
+```bash
+docker compose up -d
+```
+
+Everyone (including host) update `.env`:
+```
+DB_ENGINE=postgres
+DB_NAME=enrollsys
+DB_USER=enrollsys
+DB_PASSWORD=enrollsys_password
+DB_HOST=<HOST_LAN_IP>
+DB_PORT=5432
+```
+
+Then run:
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+```
+
+## 6) Deployment (gunicorn + nginx)
 Sample configs in `/deploy`.
 ## Admin looks unstyled (no CSS)?
 This usually means `DEBUG` is off, so Django isn't serving static files.
