@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card">
   <h2>Enlistment #{{ enlistment.id }}</h2>
-  <p><strong>Student:</strong> {{ enlistment.student.username }}</p>
+  <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
   <p><strong>Category:</strong> {{ enlistment.category.name|default:"—" }}</p>
   <p><strong>Term:</strong> {{ enlistment.school_year }} - {{ enlistment.semester }}</p>
   <p><strong>Status:</strong> <span class="pill">{{ enlistment.get_status_display }}</span></p>

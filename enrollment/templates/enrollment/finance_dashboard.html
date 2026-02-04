@@ -17,7 +17,7 @@
       {% for e in pending %}
       <tr>
         <td data-label="ID">#{{ e.id }}</td>
-        <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Student">{{ e.student.student_number }}</td>
         <td data-label="Category">{{ e.category.name|default:"—" }}</td>
         <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
         <td data-label="Status"><span class="pill yellow">{{ e.get_status_display }}</span></td>
@@ -41,7 +41,7 @@
       {% for e in holds %}
       <tr>
         <td data-label="ID">#{{ e.id }}</td>
-        <td data-label="Student">{{ e.student.username }}</td>
+        <td data-label="Student">{{ e.student.student_number }}</td>
         <td data-label="Category">{{ e.category.name|default:"—" }}</td>
         <td data-label="Status"><span class="pill red">{{ e.get_status_display }}</span></td>
         <td data-label="Reason">{{ e.hold_reason }}</td>

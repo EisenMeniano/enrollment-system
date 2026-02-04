@@ -16,7 +16,7 @@ class EnlistmentSubjectInline(admin.TabularInline):
 class EnlistmentAdmin(admin.ModelAdmin):
     list_display = ("id", "student", "school_year", "semester", "status", "created_at")
     list_filter = ("status", "school_year", "semester")
-    search_fields = ("student__username", "student__email")
+    search_fields = ("student__student_number", "student__username", "student__email")
     inlines = [EnlistmentSubjectInline]
 
 admin.site.register(Payment)

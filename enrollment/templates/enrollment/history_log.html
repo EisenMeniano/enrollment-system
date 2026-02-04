@@ -14,6 +14,33 @@
 </div>
 
 <div class="card" style="margin-top:14px;">
+  <h3>Filters</h3>
+  <form method="get">
+    <div class="actions" style="align-items:flex-end;">
+      <div style="min-width:220px;">
+        <label for="action">Action</label>
+        <select id="action" name="action">
+          <option value="">All</option>
+          {% for value,label in logs.model.Action.choices %}
+            <option value="{{ value }}" {% if filter_action == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="min-width:220px;">
+        <label for="actor">Actor (student no.)</label>
+        <input id="actor" name="actor" type="text" value="{{ filter_actor }}">
+      </div>
+      <div style="min-width:220px;">
+        <label for="student">Student (student no.)</label>
+        <input id="student" name="student" type="text" value="{{ filter_student }}">
+      </div>
+      <button class="btn" type="submit">Apply</button>
+      <a class="btn secondary" href="{% url 'enrollment:history_log' %}">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:14px;">
   <table>
     <thead>
       <tr>
@@ -29,10 +56,10 @@
       {% for log in logs %}
       <tr>
         <td data-label="Time">{{ log.created_at|date:"Y-m-d H:i" }}</td>
-        <td data-label="Actor">{{ log.actor.username|default:"System" }}</td>
+        <td data-label="Actor">{{ log.actor.student_number|default:"System" }}</td>
         <td data-label="Student">
           {% if log.enlistment %}
-            {{ log.enlistment.student.username }}
+            {{ log.enlistment.student.student_number }}
           {% else %}
             —
           {% endif %}

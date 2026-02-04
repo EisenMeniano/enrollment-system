@@ -3,7 +3,7 @@
 {% block content %}
 <div class="card">
   <h2>Final Approval — Enlistment #{{ enlistment.id }}</h2>
-  <p><strong>Student:</strong> {{ enlistment.student.username }}</p>
+  <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
   <p><strong>Finance Status:</strong> {{ enlistment.get_status_display }}</p>
   <form method="post">
     {% csrf_token %}

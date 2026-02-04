@@ -156,7 +156,7 @@
     </div>
     <div>
       {% if user.is_authenticated %}
-        <span style="margin-right:10px;">{{ user.username }} ({{ user.role }})</span>
+        <span style="margin-right:10px;">{{ user.student_number }} ({{ user.role }})</span>
 
         <!-- ✅ Logout via POST (fixes HTTP 405) -->
         <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;">

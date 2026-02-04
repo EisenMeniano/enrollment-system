@@ -202,5 +202,22 @@ def finance_set_amount_view(request, pk):
 @login_required
 @role_required("ADVISER", "FINANCE")
 def history_log(request):
-    logs = HistoryLog.objects.select_related("actor", "enlistment", "enlistment__student")[:200]
-    return render(request, "enrollment/history_log.html", {"logs": logs})
+    logs = HistoryLog.objects.select_related("actor", "enlistment", "enlistment__student")
+
+    action = request.GET.get("action") or ""
+    actor = request.GET.get("actor") or ""
+    student = request.GET.get("student") or ""
+
+    if action:
+        logs = logs.filter(action=action)
+    if actor:
+        logs = logs.filter(actor__student_number__icontains=actor)
+    if student:
+        logs = logs.filter(enlistment__student__student_number__icontains=student)
+
+    logs = logs[:200]
+    return render(
+        request,
+        "enrollment/history_log.html",
+        {"logs": logs, "filter_action": action, "filter_actor": actor, "filter_student": student},
+    )
