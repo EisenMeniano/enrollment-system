@@ -31,7 +31,11 @@
         radial-gradient(900px 500px at 90% -20%, #e7f5f0 0%, transparent 55%),
         linear-gradient(180deg, #f7f2ee 0%, #f5f1ec 100%);
       min-height:100vh;
+      opacity:0;
+      transition:opacity .16s ease-out;
     }
+    body.page-ready{opacity:1}
+    body.page-exit{opacity:0; transition:opacity .12s ease-in}
     header{
       background:linear-gradient(120deg, #394e25 0%, #4e6a32 100%);
       color:#f7f3e6;
@@ -71,10 +75,11 @@
       align-items:center;
       gap:8px;
       font-weight:600;
-      transition:transform .05s ease, background .2s ease;
+      transition:transform .08s ease, background .2s ease, box-shadow .2s ease;
+      box-shadow:0 4px 12px rgba(57,78,37,.12);
     }
     .btn:hover{background:var(--primary-dark)}
-    .btn:active{transform:translateY(1px)}
+    .btn:active{transform:translateY(1px) scale(.98)}
     .btn.secondary{background:#2f2f39;color:#f4f4f4;border-color:#2f2f39}
     .btn.gray{background:#6a6a75;color:#f4f4f4;border-color:#6a6a75}
     .pill{
@@ -218,8 +223,14 @@
       color:#f7f3e6;
       text-decoration:none;
       font-weight:600;
+      transition:transform .08s ease, background .2s ease;
     }
     .back-link:hover{ background:rgba(255,255,255,.28); }
+    .back-link:active{ transform:translateY(1px); }
+
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important; animation:none !important;}
+    }
 
     /* Inputs focus + accents */
     input:focus, select:focus, textarea:focus{
@@ -240,7 +251,7 @@
 <body>
   <header>
     <div style="display:flex;align-items:center;gap:12px;">
-      <a href="javascript:history.back()" class="back-link" aria-label="Go back">←</a>
+      <a href="#" class="back-link" aria-label="Go back">&larr;</a>
       <div class="brand">
         <img class="brand-logo" src="{% static 'img/logo_bkg.svg' %}" alt="Enrollment System logo"/>
         <a href="/">Enrollment System</a>
@@ -302,4 +313,33 @@
     {% block content %}{% endblock %}
   </main>
 </body>
+<script>
+  (function () {
+    function markReady() {
+      document.body.classList.remove("page-exit");
+      document.body.classList.add("page-ready");
+    }
+    window.addEventListener("DOMContentLoaded", markReady);
+    window.addEventListener("pageshow", markReady);
+    const backLink = document.querySelector(".back-link");
+    if (backLink) {
+      backLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.body.classList.add("page-exit");
+        setTimeout(() => { history.back(); }, 120);
+      });
+    }
+    document.querySelectorAll("a").forEach((a) => {
+      a.addEventListener("click", function (e) {
+        const href = a.getAttribute("href");
+        if (!href || href.startsWith("#") || href.startsWith("javascript:")) {
+          return;
+        }
+        e.preventDefault();
+        document.body.classList.add("page-exit");
+        setTimeout(() => { window.location.href = href; }, 120);
+      });
+    });
+  })();
+</script>
 </html>
