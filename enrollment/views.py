@@ -211,7 +211,7 @@ def history_log(request):
     if action:
         logs = logs.filter(action=action)
     if actor:
-        logs = logs.filter(actor__student_number__icontains=actor)
+        logs = logs.filter(actor__username__icontains=actor)
     if student:
         logs = logs.filter(enlistment__student__student_number__icontains=student)
 

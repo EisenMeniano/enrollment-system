@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}User Profile{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>User Profile</h2>
+  <p class="subtle">Update your name and email.</p>
+  <div class="actions" style="margin-bottom:10px;">
+    <span class="pill">Student No: {{ user.student_number }}</span>
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="actions">
+      <button class="btn" type="submit">Save Changes</button>
+      <a class="btn secondary" href="{% url 'dashboard' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

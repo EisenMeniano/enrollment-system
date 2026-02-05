@@ -27,11 +27,11 @@
         </select>
       </div>
       <div style="min-width:220px;">
-        <label for="actor">Actor (student no.)</label>
+        <label for="actor">Actor (username)</label>
         <input id="actor" name="actor" type="text" value="{{ filter_actor }}">
       </div>
       <div style="min-width:220px;">
-        <label for="student">Student (student no.)</label>
+        <label for="student">Student No.</label>
         <input id="student" name="student" type="text" value="{{ filter_student }}">
       </div>
       <button class="btn" type="submit">Apply</button>
@@ -46,7 +46,7 @@
       <tr>
         <th>Time</th>
         <th>Actor</th>
-        <th>Student</th>
+        <th>Student No.</th>
         <th>Term</th>
         <th>Action</th>
         <th>Message</th>
@@ -56,8 +56,8 @@
       {% for log in logs %}
       <tr>
         <td data-label="Time">{{ log.created_at|date:"Y-m-d H:i" }}</td>
-        <td data-label="Actor">{{ log.actor.student_number|default:"System" }}</td>
-        <td data-label="Student">
+        <td data-label="Actor">{{ log.actor.username|default:"System" }}</td>
+        <td data-label="Student No.">
           {% if log.enlistment %}
             {{ log.enlistment.student.student_number }}
           {% else %}
