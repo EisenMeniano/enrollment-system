@@ -12,13 +12,14 @@
 <div class="card" style="margin-top:14px;">
   <h3>Pending Finance Review</h3>
   <table>
-    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Term</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for e in pending %}
       <tr>
         <td data-label="ID">#{{ e.id }}</td>
         <td data-label="Student">{{ e.student.student_number }}</td>
         <td data-label="Category">{{ e.category.name|default:"—" }}</td>
+        <td data-label="Program">{{ e.program.name|default:"—" }}</td>
         <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
         <td data-label="Status"><span class="pill yellow">{{ e.get_status_display }}</span></td>
         <td data-label="Actions">
@@ -27,7 +28,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6">None.</td></tr>
+      <tr><td colspan="7">None.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -36,19 +37,20 @@
 <div class="card" style="margin-top:14px;">
   <h3>Holds</h3>
   <table>
-    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Status</th><th>Reason</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Program</th><th>Status</th><th>Reason</th><th></th></tr></thead>
     <tbody>
       {% for e in holds %}
       <tr>
         <td data-label="ID">#{{ e.id }}</td>
         <td data-label="Student">{{ e.student.student_number }}</td>
         <td data-label="Category">{{ e.category.name|default:"—" }}</td>
+        <td data-label="Program">{{ e.program.name|default:"—" }}</td>
         <td data-label="Status"><span class="pill red">{{ e.get_status_display }}</span></td>
         <td data-label="Reason">{{ e.hold_reason }}</td>
         <td data-label="Actions"><a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a></td>
       </tr>
       {% empty %}
-      <tr><td colspan="6">None.</td></tr>
+      <tr><td colspan="7">None.</td></tr>
       {% endfor %}
     </tbody>
   </table>

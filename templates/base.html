@@ -285,7 +285,13 @@
                   {{ user.student_number }}
                 {% endif %}
               </div>
-              <div class="profile-role">{{ user.role }}</div>
+              <div class="profile-role">
+                {% if user.program %}
+                  {{ user.program }}
+                {% else %}
+                  {{ user.role }}
+                {% endif %}
+              </div>
             </div>
             <div class="profile-links">
               <a href="/">Home</a>

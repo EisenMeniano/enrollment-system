@@ -21,6 +21,16 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+class Program(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
 class SchoolYear(models.Model):
     label = models.CharField(max_length=20, unique=True)  # e.g. 2025-2026
     is_active = models.BooleanField(default=True)
@@ -77,6 +87,9 @@ class Enlistment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="enlistments")
     category = models.ForeignKey(
         Category, on_delete=models.PROTECT, null=True, blank=True, related_name="enlistments"
+    )
+    program = models.ForeignKey(
+        Program, on_delete=models.PROTECT, null=True, blank=True, related_name="enlistments"
     )
     school_year = models.CharField(max_length=20)
     semester = models.CharField(max_length=20)

@@ -4,8 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
 from accounts.models import User
-from .models import Enlistment, HistoryLog
-from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm
+from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject
+from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
 from .services import (
     student_submit_enlistment,
     adviser_preapprove,
@@ -52,12 +52,13 @@ def student_enlistment_create(request):
                 enlistment = student_submit_enlistment(
                     request.user,
                     category=form.cleaned_data["category"],
+                    program=form.cleaned_data["program"],
                     school_year=form.cleaned_data["school_year"].label,
                     semester=form.cleaned_data["semester"].name,
                     notes=form.cleaned_data.get("notes", ""),
                 )
                 messages.success(request, "Enlistment submitted. Waiting for adviser review.")
-                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+                return redirect("enrollment:student_subject_select", pk=enlistment.pk)
             except ValidationError as e:
                 form.add_error(None, e.messages[0] if e.messages else "Unable to submit enlistment.")
     else:
@@ -89,6 +90,33 @@ def student_pay(request, pk):
     else:
         form = PaymentForm()
     return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form, "payment": payment})
+
+@login_required
+@role_required("STUDENT")
+def student_subject_select(request, pk):
+    enlistment = get_object_or_404(Enlistment, pk=pk, student=request.user)
+    if enlistment.status not in [Enlistment.Status.SUBMITTED, Enlistment.Status.RETURNED]:
+        messages.error(request, "Subject selection is only allowed after submission.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+    selected = list(enlistment.next_subjects.values_list("subject_id", flat=True))
+    if request.method == "POST":
+        form = StudentSubjectSelectForm(request.POST)
+        if form.is_valid():
+            EnlistmentSubject.objects.filter(enlistment=enlistment).delete()
+            for subject in form.cleaned_data["subjects"]:
+                EnlistmentSubject.objects.create(enlistment=enlistment, subject=subject)
+            messages.success(request, "Subjects saved.")
+            return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+    else:
+        form = StudentSubjectSelectForm(initial={"subjects": list(selected)})
+
+    subjects = Subject.objects.all().order_by("code")
+    return render(
+        request,
+        "enrollment/student_subject_select.html",
+        {"enlistment": enlistment, "form": form, "subjects": subjects, "selected_ids": set(selected)},
+    )
 
 # ---------------------- ADVISER ----------------------
 @login_required

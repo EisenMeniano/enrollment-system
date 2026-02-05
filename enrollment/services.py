@@ -29,7 +29,7 @@ def can_finance_approve(enlistment):
     return True, ""
 
 @transaction.atomic
-def student_submit_enlistment(student, school_year, semester, category, notes=""):
+def student_submit_enlistment(student, school_year, semester, category, program, notes=""):
     existing = Enlistment.objects.filter(
         student=student,
         school_year=school_year,
@@ -42,6 +42,7 @@ def student_submit_enlistment(student, school_year, semester, category, notes=""
     enlistment = Enlistment.objects.create(
         student=student,
         category=category,
+        program=program,
         school_year=school_year,
         semester=semester,
         status=Enlistment.Status.SUBMITTED,

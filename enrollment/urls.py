@@ -7,6 +7,7 @@ urlpatterns = [
     # Student
     path("student/", views.student_dashboard, name="student_dashboard"),
     path("student/new/", views.student_enlistment_create, name="enlistment_create"),
+    path("student/subjects/<int:pk>/", views.student_subject_select, name="student_subject_select"),
     path("student/pay/<int:pk>/", views.student_pay, name="student_pay"),
 
     # Adviser

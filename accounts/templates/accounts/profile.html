@@ -7,6 +7,9 @@
   <div class="actions" style="margin-bottom:10px;">
     <span class="pill">Student No: {{ user.student_number }}</span>
   </div>
+  <div class="actions" style="margin-bottom:10px;">
+    <span class="pill">Program: {{ user.program|default:"—" }}</span>
+  </div>
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}

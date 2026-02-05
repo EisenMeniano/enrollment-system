@@ -1,10 +1,14 @@
 from django import forms
-from .models import Subject, Category, SchoolYear, Semester
+from .models import Subject, Category, SchoolYear, Semester, Program
 
 class EnlistmentCreateForm(forms.Form):
     category = forms.ModelChoiceField(
         queryset=Category.objects.filter(is_active=True).order_by("name"),
         empty_label="Select category",
+    )
+    program = forms.ModelChoiceField(
+        queryset=Program.objects.filter(is_active=True).order_by("name"),
+        empty_label="Select program",
     )
     school_year = forms.ModelChoiceField(
         queryset=SchoolYear.objects.filter(is_active=True).order_by("-label"),
@@ -35,4 +39,11 @@ class FinanceAmountForm(forms.Form):
         decimal_places=2,
         min_value=0,
         help_text="Set the amount the student needs to pay.",
+    )
+
+class StudentSubjectSelectForm(forms.Form):
+    subjects = forms.ModelMultipleChoiceField(
+        queryset=Subject.objects.all().order_by("code"),
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select the subjects you want to take.",
     )
