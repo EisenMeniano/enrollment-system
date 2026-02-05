@@ -97,6 +97,7 @@ USE_TZ = True
 # Static files
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # In dev, use the default storage; in prod, WhiteNoise manifest storage.
 if DEBUG:

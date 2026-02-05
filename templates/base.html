@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -41,6 +42,12 @@
       box-shadow:var(--shadow);
     }
     header a{color:#f7f3e6;text-decoration:none;font-weight:700;letter-spacing:.2px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-logo{
+      height:24px;
+      width:auto;
+      display:block;
+    }
     main{max-width:1100px;margin:26px auto;padding:0 16px}
     h2,h3{margin-top:0}
     .subtle{color:var(--muted);margin-top:6px}
@@ -234,7 +241,10 @@
   <header>
     <div style="display:flex;align-items:center;gap:12px;">
       <a href="javascript:history.back()" class="back-link" aria-label="Go back">←</a>
-      <a href="/">Enrollment System</a>
+      <div class="brand">
+        <img class="brand-logo" src="{% static 'img/logo_bkg.svg' %}" alt="Enrollment System logo"/>
+        <a href="/">Enrollment System</a>
+      </div>
     </div>
     <div>
       {% if user.is_authenticated %}
