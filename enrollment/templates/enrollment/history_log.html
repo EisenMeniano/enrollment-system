@@ -6,7 +6,7 @@
   <p>Recent enrollment actions (latest 200).</p>
   <div class="actions">
     {% if user.role == "ADVISER" %}
-      <a class="btn gray" href="{% url 'enrollment:adviser_dashboard' %}">Back to Adviser</a>
+      <a class="btn" href="{% url 'enrollment:adviser_dashboard' %}">Back to Adviser</a>
     {% elif user.role == "FINANCE" %}
       <a class="btn" href="{% url 'enrollment:finance_dashboard' %}">Back to Finance</a>
     {% endif %}
@@ -34,8 +34,8 @@
         <label for="student">Student No.</label>
         <input id="student" name="student" type="text" value="{{ filter_student }}">
       </div>
-      <button class="btn" type="submit">Apply</button>
-      <a class="btn" href="{% url 'enrollment:history_log' %}">Reset</a>
+      <button class="btn equal" type="submit">Apply</button>
+      <a class="btn equal" href="{% url 'enrollment:history_log' %}">Reset</a>
     </div>
   </form>
 </div>
