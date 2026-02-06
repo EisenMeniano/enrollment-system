@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Address Details{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="address" %}
+  <section>
+    <div class="section-card">
+      <h3 class="section-title">Address Details</h3>
+      <form method="post">
+        {% csrf_token %}
+        <div class="field-grid">
+          <div class="field">
+            <label>Address</label>
+            {{ form.address_line }}
+          </div>
+          <div class="field">
+            <label>City</label>
+            {{ form.city }}
+          </div>
+          <div class="field">
+            <label>Province</label>
+            {{ form.province }}
+          </div>
+          <div class="field">
+            <label>Postal Code</label>
+            {{ form.postal_code }}
+          </div>
+          <div class="field">
+            <label>Country</label>
+            {{ form.country }}
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn" type="submit">Save Changes</button>
+          <a class="btn secondary" href="{% url 'enrollment:student_profile_address' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

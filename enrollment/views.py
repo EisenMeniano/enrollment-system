@@ -3,7 +3,8 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
-from accounts.models import User
+from accounts.models import User, StudentProfile
+from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm
 from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject
 from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
 from .services import (
@@ -39,8 +40,7 @@ def dashboard(request):
 @login_required
 @role_required("STUDENT")
 def student_dashboard(request):
-    enlistments = Enlistment.objects.filter(student=request.user)
-    return render(request, "enrollment/student_dashboard.html", {"enlistments": enlistments})
+    return redirect("enrollment:student_profile_personal")
 
 @login_required
 @role_required("STUDENT")
@@ -116,6 +116,84 @@ def student_subject_select(request, pk):
         request,
         "enrollment/student_subject_select.html",
         {"enlistment": enlistment, "form": form, "subjects": subjects, "selected_ids": set(selected)},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_personal(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        user_form = PersonalDetailsUserForm(request.POST, instance=request.user)
+        profile_form = PersonalDetailsProfileForm(request.POST, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "Personal details updated.")
+            return redirect("enrollment:student_profile_personal")
+    else:
+        user_form = PersonalDetailsUserForm(instance=request.user)
+        profile_form = PersonalDetailsProfileForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_personal.html",
+        {"profile": profile, "user_form": user_form, "profile_form": profile_form},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_address(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = AddressDetailsForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Address details updated.")
+            return redirect("enrollment:student_profile_address")
+    else:
+        form = AddressDetailsForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_address.html",
+        {"profile": profile, "form": form},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_course(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = CourseDetailsForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course details updated.")
+            return redirect("enrollment:student_profile_course")
+    else:
+        form = CourseDetailsForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_course.html",
+        {"profile": profile, "form": form},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_enlisted(request):
+    enlistments = Enlistment.objects.filter(student=request.user)
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_enlisted.html",
+        {"enlistments": enlistments, "profile": profile},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_schedule(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_schedule.html",
+        {"profile": profile},
     )
 
 # ---------------------- ADVISER ----------------------
