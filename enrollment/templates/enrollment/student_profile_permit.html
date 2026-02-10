@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Exam Permit{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="permit" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Exam Permit</h3>
+      <form method="get" class="field-grid">
+        <div class="field">
+          <label>Session</label>
+          <select name="session" onchange="this.form.submit()">
+            <option value="">Please Select</option>
+            {% for s in sessions %}
+              <option value="{{ s.id }}" {% if selected_session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Semester Name</label>
+          <input type="text" value="{% if permit %}{{ permit.semester_name }}{% else %}{% if latest_enlistment %}{{ latest_enlistment.semester }}{% endif %}{% endif %}" readonly>
+        </div>
+        <div class="field">
+          <label>Period No.</label>
+          <input type="text" value="{% if permit %}{{ permit.period_no }}{% endif %}" readonly>
+        </div>
+      </form>
+      <div class="actions" style="margin-top:12px;">
+        {% if permit and permit.file %}
+          <a class="btn" href="{{ permit.file.url }}">Download Exam Permit</a>
+        {% else %}
+          <button class="btn" type="button" disabled style="opacity:.6;cursor:not-allowed;">No Permit Available</button>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

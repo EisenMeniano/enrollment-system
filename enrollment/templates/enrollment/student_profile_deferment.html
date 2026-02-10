@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Apply Deferment{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="deferment" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Apply Deferment</h3>
+      <form method="post">
+        {% csrf_token %}
+        <div class="field-grid">
+          <div class="field">
+            <label>Academic Session</label>
+            <select name="session">
+              <option value="">Please Select</option>
+              {% for s in sessions %}
+                <option value="{{ s.id }}">{{ s.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>Number of Semester</label>
+            <input type="number" name="num_semesters" min="1" value="1">
+          </div>
+          <div class="field">
+            <label>Type of Deferment</label>
+            <select name="deferment_type">
+              <option value="">Please Select</option>
+              <option>Leave</option>
+              <option>Withdraw</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Reason</label>
+            <textarea name="reason"></textarea>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn" type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+    <div class="section-card">
+      <h3 class="section-title">Your Requests</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Semesters</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+          <tr>
+            <td data-label="Session">{{ r.session.label|default:"—" }}</td>
+            <td data-label="Semesters">{{ r.num_semesters }}</td>
+            <td data-label="Type">{{ r.deferment_type|default:"—" }}</td>
+            <td data-label="Status">{{ r.get_status_display }}</td>
+            <td data-label="Submitted">{{ r.created_at|date:"Y-m-d" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">No requests yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

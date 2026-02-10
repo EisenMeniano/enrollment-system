@@ -5,7 +5,22 @@ from django.contrib import messages
 
 from accounts.models import User, StudentProfile
 from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm, PhotoSignatureForm
-from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject, EnrollmentWindow, SchoolYear
+from .models import (
+    Enlistment,
+    HistoryLog,
+    EnlistmentSubject,
+    Subject,
+    EnrollmentWindow,
+    SchoolYear,
+    AttendanceRecord,
+    OverallResult,
+    ExamPermit,
+    ExamSchedule,
+    DefermentRequest,
+    CurriculumProgressSummary,
+    CurriculumProgressCourse,
+    StudentProfileMenuItem,
+)
 from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
 from .services import (
     student_submit_enlistment,
@@ -137,6 +152,7 @@ def student_subject_select(request, pk):
 def student_profile_personal(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
     if request.method == "POST":
         user_form = PersonalDetailsUserForm(request.POST, instance=request.user)
         profile_form = PersonalDetailsProfileForm(request.POST, instance=profile)
@@ -151,7 +167,13 @@ def student_profile_personal(request):
     return render(
         request,
         "enrollment/student_profile_personal.html",
-        {"profile": profile, "user_form": user_form, "profile_form": profile_form, "latest_enlistment": latest_enlistment},
+        {
+            "profile": profile,
+            "user_form": user_form,
+            "profile_form": profile_form,
+            "latest_enlistment": latest_enlistment,
+            "menu_items": menu_items,
+        },
     )
 
 @login_required
@@ -159,6 +181,7 @@ def student_profile_personal(request):
 def student_profile_address(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
     if request.method == "POST":
         form = AddressDetailsForm(request.POST, instance=profile)
         if form.is_valid():
@@ -170,7 +193,7 @@ def student_profile_address(request):
     return render(
         request,
         "enrollment/student_profile_address.html",
-        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment},
+        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 @login_required
@@ -178,6 +201,7 @@ def student_profile_address(request):
 def student_profile_course(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
     if request.method == "POST":
         form = CourseDetailsForm(request.POST, instance=profile)
         if form.is_valid():
@@ -189,7 +213,7 @@ def student_profile_course(request):
     return render(
         request,
         "enrollment/student_profile_course.html",
-        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment},
+        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 @login_required
@@ -198,10 +222,11 @@ def student_profile_enlisted(request):
     enlistments = Enlistment.objects.filter(student=request.user)
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = enlistments.first()
+    menu_items = StudentProfileMenuItem.get_menu()
     return render(
         request,
         "enrollment/student_profile_enlisted.html",
-        {"enlistments": enlistments, "profile": profile, "latest_enlistment": latest_enlistment},
+        {"enlistments": enlistments, "profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 @login_required
@@ -210,10 +235,11 @@ def student_profile_schedule(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
     return render(
         request,
         "enrollment/student_profile_schedule.html",
-        {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment},
+        {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 def _student_profile_placeholder(request, active, title):
@@ -229,6 +255,7 @@ def _student_profile_placeholder(request, active, title):
 def student_profile_photo(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
     if request.method == "POST":
         form = PhotoSignatureForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
@@ -240,7 +267,7 @@ def student_profile_photo(request):
     return render(
         request,
         "enrollment/student_profile_photo.html",
-        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment},
+        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 @login_required
@@ -249,26 +276,89 @@ def student_profile_grade(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
     return render(
         request,
         "enrollment/student_profile_grade.html",
-        {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment},
+        {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_attendance(request):
-    return _student_profile_placeholder(request, "attendance", "Attendance")
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
+    selected_session_id = request.GET.get("session")
+    if selected_session_id:
+        records = AttendanceRecord.objects.filter(student=request.user, session_id=selected_session_id)
+    else:
+        records = AttendanceRecord.objects.filter(student=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_attendance.html",
+        {
+            "profile": profile,
+            "sessions": sessions,
+            "latest_enlistment": latest_enlistment,
+            "attendance_records": records,
+            "selected_session_id": selected_session_id or "",
+            "menu_items": menu_items,
+        },
+    )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_overall(request):
-    return _student_profile_placeholder(request, "overall", "Overall Result")
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
+    selected_session_id = request.GET.get("session")
+    results = OverallResult.objects.filter(student=request.user)
+    if selected_session_id:
+        results = results.filter(session_id=selected_session_id)
+    selected_result = results.first()
+    items = selected_result.items.all() if selected_result else []
+    return render(
+        request,
+        "enrollment/student_profile_overall.html",
+        {
+            "profile": profile,
+            "sessions": sessions,
+            "latest_enlistment": latest_enlistment,
+            "overall_results": results,
+            "overall_items": items,
+            "selected_session_id": selected_session_id or "",
+            "menu_items": menu_items,
+        },
+    )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_permit(request):
-    return _student_profile_placeholder(request, "permit", "Exam Permit")
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
+    selected_session_id = request.GET.get("session")
+    permits = ExamPermit.objects.filter(student=request.user)
+    if selected_session_id:
+        permits = permits.filter(session_id=selected_session_id)
+    permit = permits.first()
+    return render(
+        request,
+        "enrollment/student_profile_permit.html",
+        {
+            "profile": profile,
+            "sessions": sessions,
+            "latest_enlistment": latest_enlistment,
+            "permit": permit,
+            "selected_session_id": selected_session_id or "",
+            "menu_items": menu_items,
+        },
+    )
 
 @login_required
 @role_required("STUDENT")
@@ -278,17 +368,86 @@ def student_profile_document(request):
 @login_required
 @role_required("STUDENT")
 def student_profile_exam_schedule(request):
-    return _student_profile_placeholder(request, "exam_schedule", "Exam Schedule")
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
+    selected_session_id = request.GET.get("session")
+    schedules = ExamSchedule.objects.filter(student=request.user)
+    if selected_session_id:
+        schedules = schedules.filter(session_id=selected_session_id)
+    return render(
+        request,
+        "enrollment/student_profile_exam_schedule.html",
+        {
+            "profile": profile,
+            "sessions": sessions,
+            "latest_enlistment": latest_enlistment,
+            "schedules": schedules,
+            "selected_session_id": selected_session_id or "",
+            "menu_items": menu_items,
+        },
+    )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_deferment(request):
-    return _student_profile_placeholder(request, "deferment", "Apply Deferment")
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
+    if request.method == "POST":
+        session_id = request.POST.get("session") or None
+        DefermentRequest.objects.create(
+            student=request.user,
+            session_id=session_id if session_id else None,
+            num_semesters=int(request.POST.get("num_semesters") or 1),
+            deferment_type=request.POST.get("deferment_type") or "",
+            reason=request.POST.get("reason") or "",
+        )
+        messages.success(request, "Deferment request submitted.")
+        return redirect("enrollment:student_profile_deferment")
+    requests = DefermentRequest.objects.filter(student=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_deferment.html",
+        {
+            "profile": profile,
+            "sessions": sessions,
+            "latest_enlistment": latest_enlistment,
+            "requests": requests,
+            "menu_items": menu_items,
+        },
+    )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_curriculum(request):
-    return _student_profile_placeholder(request, "curriculum", "Curriculum Progressions")
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    menu_items = StudentProfileMenuItem.get_menu()
+    selected_session_id = request.GET.get("session")
+    summary = CurriculumProgressSummary.objects.filter(student=request.user)
+    if selected_session_id:
+        summary = summary.filter(session_id=selected_session_id)
+    summary = summary.first()
+    courses = CurriculumProgressCourse.objects.filter(student=request.user)
+    if selected_session_id:
+        courses = courses.filter(session_id=selected_session_id)
+    return render(
+        request,
+        "enrollment/student_profile_curriculum.html",
+        {
+            "profile": profile,
+            "sessions": sessions,
+            "latest_enlistment": latest_enlistment,
+            "summary": summary,
+            "courses": courses,
+            "selected_session_id": selected_session_id or "",
+            "menu_items": menu_items,
+        },
+    )
 
 # ---------------------- ADVISER ----------------------
 @login_required

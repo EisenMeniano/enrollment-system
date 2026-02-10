@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Curriculum Progressions{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="curriculum" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Curriculum Progressions</h3>
+      <form method="get" class="field" style="max-width:360px;">
+        <label>Academic Session</label>
+        <select name="session" onchange="this.form.submit()">
+          <option value="">Please Select</option>
+          {% for s in sessions %}
+            <option value="{{ s.id }}" {% if selected_session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <div class="field-grid" style="margin-top:12px;">
+        <div class="field"><label>Earned Credits</label><div class="value">{{ summary.earned_credits|default:"0" }}</div></div>
+        <div class="field"><label>Registered Credits</label><div class="value">{{ summary.registered_credits|default:"0" }}</div></div>
+        <div class="field"><label>Remaining Credits</label><div class="value">{{ summary.remaining_credits|default:"0" }}</div></div>
+        <div class="field"><label>Total Credits</label><div class="value">{{ summary.total_credits|default:"0" }}</div></div>
+      </div>
+      <div style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Session</th>
+              <th>Semester</th>
+              <th>Reg Credits</th>
+              <th>Earned Credits</th>
+              <th>SGPA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if summary %}
+            <tr>
+              <td data-label="Session">{{ summary.session.label|default:"—" }}</td>
+              <td data-label="Semester">{{ summary.semester_name|default:"—" }}</td>
+              <td data-label="Reg Credits">{{ summary.registered_credits }}</td>
+              <td data-label="Earned Credits">{{ summary.earned_credits }}</td>
+              <td data-label="SGPA">{{ summary.sgpa }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">No summary data yet.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Session</th>
+              <th>Semester</th>
+              <th>Course</th>
+              <th>Type</th>
+              <th>Credits</th>
+              <th>Grades</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in courses %}
+            <tr>
+              <td data-label="Session">{{ c.session.label|default:"—" }}</td>
+              <td data-label="Semester">{{ c.semester_name|default:"—" }}</td>
+              <td data-label="Course">{{ c.course_name|default:"—" }}</td>
+              <td data-label="Type">{{ c.course_type|default:"—" }}</td>
+              <td data-label="Credits">{{ c.credits }}</td>
+              <td data-label="Grades">{{ c.grade }}</td>
+              <td data-label="Status">{{ c.status|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No course data yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

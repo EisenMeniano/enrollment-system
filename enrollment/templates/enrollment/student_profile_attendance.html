@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="attendance" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Attendance</h3>
+      <form method="get" class="field" style="max-width:360px;">
+        <label>Academic Session</label>
+        <select name="session" onchange="this.form.submit()">
+          <option value="">Please Select</option>
+          {% for s in sessions %}
+            <option value="{{ s.id }}" {% if selected_session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <div style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Sr. No.</th>
+              <th>Subject Code</th>
+              <th>Subject Name</th>
+              <th>Subject Type</th>
+              <th>Total Classes</th>
+              <th>Total Present</th>
+              <th>Attendance (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in attendance_records %}
+            <tr>
+              <td data-label="Sr. No.">{{ forloop.counter }}</td>
+              <td data-label="Subject Code">{{ r.subject.code }}</td>
+              <td data-label="Subject Name">{{ r.subject.title }}</td>
+              <td data-label="Subject Type">{{ r.subject_type|default:"—" }}</td>
+              <td data-label="Total Classes">{{ r.total_classes }}</td>
+              <td data-label="Total Present">{{ r.total_present }}</td>
+              <td data-label="Attendance (%)">{{ r.attendance_percent }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7">No attendance records yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

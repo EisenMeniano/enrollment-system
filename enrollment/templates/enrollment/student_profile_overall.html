@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Overall Result{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="overall" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Overall Result</h3>
+      <form method="get" class="field" style="max-width:360px;">
+        <label>Academic Session</label>
+        <select name="session" onchange="this.form.submit()">
+          <option value="">Please Select</option>
+          {% for s in sessions %}
+            <option value="{{ s.id }}" {% if selected_session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <table style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>Semester Name</th>
+            <th>Academic Session</th>
+            <th>Total Subject</th>
+            <th>GWA</th>
+            <th>Date of Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in overall_results %}
+          <tr>
+            <td data-label="Semester Name">{{ r.semester_name|default:"—" }}</td>
+            <td data-label="Academic Session">{{ r.session.label|default:"—" }}</td>
+            <td data-label="Total Subject">{{ r.total_subjects }}</td>
+            <td data-label="GWA">{{ r.gwa }}</td>
+            <td data-label="Date of Result">{{ r.result_date|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">No results yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Subject Code</th>
+              <th>Subject Name</th>
+              <th>Subject Type</th>
+              <th>Units</th>
+              <th>Final Grade</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in overall_items %}
+            <tr>
+              <td data-label="Subject Code">{{ i.subject.code }}</td>
+              <td data-label="Subject Name">{{ i.subject.title }}</td>
+              <td data-label="Subject Type">{{ i.subject_type|default:"—" }}</td>
+              <td data-label="Units">{{ i.units }}</td>
+              <td data-label="Final Grade">{{ i.final_grade }}</td>
+              <td data-label="Status">{{ i.status|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No subject results yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
