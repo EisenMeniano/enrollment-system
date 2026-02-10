@@ -42,11 +42,29 @@ class StudentProfile(models.Model):
     mobile_no = models.CharField(max_length=30, blank=True)
     facebook_name = models.CharField(max_length=150, blank=True)
     facebook_link = models.URLField(max_length=300, blank=True)
-    address_line = models.CharField(max_length=200, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    province = models.CharField(max_length=100, blank=True)
-    postal_code = models.CharField(max_length=20, blank=True)
-    country = models.CharField(max_length=100, blank=True)
+    # Address (current)
+    current_address_line = models.CharField(max_length=200, blank=True)
+    current_country = models.CharField(max_length=100, blank=True)
+    current_province = models.CharField(max_length=100, blank=True)
+    current_city = models.CharField(max_length=100, blank=True)
+    current_postal_code = models.CharField(max_length=20, blank=True)
+    # Address (permanent)
+    same_as_current = models.BooleanField(default=True)
+    permanent_address_line = models.CharField(max_length=200, blank=True)
+    permanent_country = models.CharField(max_length=100, blank=True)
+    permanent_province = models.CharField(max_length=100, blank=True)
+    permanent_city = models.CharField(max_length=100, blank=True)
+    permanent_postal_code = models.CharField(max_length=20, blank=True)
+
+    # Course details
+    intake = models.CharField(max_length=50, blank=True)
+    learning_modality = models.CharField(max_length=50, blank=True)
+    advisor_name = models.CharField(max_length=150, blank=True)
+    mentor_name = models.CharField(max_length=150, blank=True)
+
+    # Photo / signature
+    photo_file = models.FileField(upload_to="photos/", blank=True, null=True)
+    signature_file = models.FileField(upload_to="signatures/", blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.student_number} - {self.user.get_full_name() or self.user.username}"

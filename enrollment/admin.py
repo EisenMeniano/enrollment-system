@@ -1,9 +1,10 @@
 from django.contrib import admin
-from .models import Subject, StudentFinanceAccount, PreviousTermSubject, Enlistment, EnlistmentSubject, Payment, Category, SchoolYear, Semester, Program
+from .models import Subject, StudentFinanceAccount, PreviousTermSubject, Enlistment, EnlistmentSubject, Payment, Category, SchoolYear, Semester, Program, EnrollmentWindow
 
 admin.site.register(Subject)
 admin.site.register(Category)
 admin.site.register(Program)
+admin.site.register(EnrollmentWindow)
 admin.site.register(SchoolYear)
 admin.site.register(Semester)
 admin.site.register(StudentFinanceAccount)

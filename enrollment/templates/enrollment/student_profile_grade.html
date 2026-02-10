@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Class Schedule{% endblock %}
+{% block title %}Grade{% endblock %}
 {% block content %}
 <div class="layout">
-  {% include "enrollment/_student_sidebar.html" with active="schedule" %}
+  {% include "enrollment/_student_sidebar.html" with active="grade" %}
   <section>
     {% include "enrollment/_student_topinfo.html" %}
     <div class="section-card">
-      <h3 class="section-title">Class Schedule</h3>
+      <h3 class="section-title">Grade</h3>
       <div class="field" style="max-width:360px;">
-        <label>Session Name</label>
+        <label>Academic Session</label>
         <select>
           <option value="">Please Select</option>
           {% for s in sessions %}

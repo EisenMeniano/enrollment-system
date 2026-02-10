@@ -165,3 +165,23 @@ class HistoryLog(models.Model):
 
     def __str__(self):
         return f"{self.get_action_display()} by {self.actor} at {self.created_at}"
+
+
+class EnrollmentWindow(models.Model):
+    is_open = models.BooleanField(default=True)
+    message = models.CharField(max_length=255, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Enrollment Window"
+        verbose_name_plural = "Enrollment Window"
+
+    def __str__(self):
+        return "Open" if self.is_open else "Closed"
+
+    @classmethod
+    def get_solo(cls):
+        obj = cls.objects.first()
+        if not obj:
+            obj = cls.objects.create(is_open=True, message="")
+        return obj

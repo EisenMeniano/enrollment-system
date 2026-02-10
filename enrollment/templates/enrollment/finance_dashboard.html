@@ -10,6 +10,23 @@
 </div>
 
 <div class="card" style="margin-top:14px;">
+  <h3>Enrollment Window</h3>
+  <p class="subtle">Current status: <strong>{{ window.is_open|yesno:"Open,Closed" }}</strong></p>
+  <form method="post" action="{% url 'enrollment:finance_toggle_enrollment' %}">
+    {% csrf_token %}
+    <div class="actions">
+      <input type="hidden" name="action" value="{% if window.is_open %}close{% else %}open{% endif %}">
+      {% if window.is_open %}
+        <input type="text" name="message" placeholder="Message when closed (optional)">
+        <button class="btn" type="submit">Close Enrollment</button>
+      {% else %}
+        <button class="btn" type="submit">Open Enrollment</button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:14px;">
   <h3>Pending Finance Review</h3>
   <table>
     <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th></th></tr></thead>

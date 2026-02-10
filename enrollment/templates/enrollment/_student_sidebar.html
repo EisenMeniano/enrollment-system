@@ -3,6 +3,15 @@
   <a class="{% if active == 'personal' %}active{% endif %}" href="{% url 'enrollment:student_profile_personal' %}">Personal Details</a>
   <a class="{% if active == 'address' %}active{% endif %}" href="{% url 'enrollment:student_profile_address' %}">Address Details</a>
   <a class="{% if active == 'course' %}active{% endif %}" href="{% url 'enrollment:student_profile_course' %}">Course Details</a>
+  <a class="{% if active == 'photo' %}active{% endif %}" href="{% url 'enrollment:student_profile_photo' %}">Photo Signature</a>
   <a class="{% if active == 'enlisted' %}active{% endif %}" href="{% url 'enrollment:student_profile_enlisted' %}">Enlisted Subjects</a>
+  <a class="{% if active == 'grade' %}active{% endif %}" href="{% url 'enrollment:student_profile_grade' %}">Grade</a>
   <a class="{% if active == 'schedule' %}active{% endif %}" href="{% url 'enrollment:student_profile_schedule' %}">Class Schedule</a>
+  <a class="{% if active == 'attendance' %}active{% endif %}" href="{% url 'enrollment:student_profile_attendance' %}">Attendance</a>
+  <a class="{% if active == 'overall' %}active{% endif %}" href="{% url 'enrollment:student_profile_overall' %}">Overall Result</a>
+  <a class="{% if active == 'permit' %}active{% endif %}" href="{% url 'enrollment:student_profile_permit' %}">Exam Permit</a>
+  <a class="{% if active == 'document' %}active{% endif %}" href="{% url 'enrollment:student_profile_document' %}">Document</a>
+  <a class="{% if active == 'exam_schedule' %}active{% endif %}" href="{% url 'enrollment:student_profile_exam_schedule' %}">Exam Schedule</a>
+  <a class="{% if active == 'deferment' %}active{% endif %}" href="{% url 'enrollment:student_profile_deferment' %}">Apply Deferment</a>
+  <a class="{% if active == 'curriculum' %}active{% endif %}" href="{% url 'enrollment:student_profile_curriculum' %}">Curriculum Progressions</a>
 </aside>

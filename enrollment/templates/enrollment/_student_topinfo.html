@@ -1,0 +1,12 @@
+<div class="section-card">
+  <div class="info-grid">
+    <div class="info-row"><strong>Student ID</strong><span>{{ user.student_number }}</span></div>
+    <div class="info-row"><strong>Course</strong><span>{{ profile.program|default:"—" }}</span></div>
+    <div class="info-row"><strong>Campus</strong><span>{{ profile.campus|default:"—" }}</span></div>
+    <div class="info-row"><strong>Curriculum</strong><span>{{ profile.curriculum|default:"—" }}</span></div>
+    <div class="info-row"><strong>College</strong><span>{{ profile.college|default:"—" }}</span></div>
+    <div class="info-row"><strong>Semester Name</strong>
+      <span>{% if latest_enlistment %}{{ latest_enlistment.semester }}{% else %}—{% endif %}</span>
+    </div>
+  </div>
+</div>
