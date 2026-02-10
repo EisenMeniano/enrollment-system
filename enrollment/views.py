@@ -5,7 +5,7 @@ from django.contrib import messages
 
 from accounts.models import User, StudentProfile
 from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm
-from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject
+from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject, EnrollmentWindow
 from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
 from .services import (
     student_submit_enlistment,
@@ -45,6 +45,13 @@ def student_dashboard(request):
 @login_required
 @role_required("STUDENT")
 def student_enlistment_create(request):
+    window = EnrollmentWindow.get_solo()
+    if not window.is_open:
+        return render(
+            request,
+            "enrollment/enrollment_closed.html",
+            {"message": window.message or "Enrollment is currently closed."},
+        )
     if request.method == "POST":
         form = EnlistmentCreateForm(request.POST)
         if form.is_valid():
@@ -95,6 +102,13 @@ def student_pay(request, pk):
 @role_required("STUDENT")
 def student_subject_select(request, pk):
     enlistment = get_object_or_404(Enlistment, pk=pk, student=request.user)
+    window = EnrollmentWindow.get_solo()
+    if not window.is_open:
+        return render(
+            request,
+            "enrollment/enrollment_closed.html",
+            {"message": window.message or "Enrollment is currently closed."},
+        )
     if enlistment.status not in [Enlistment.Status.SUBMITTED, Enlistment.Status.RETURNED]:
         messages.error(request, "Subject selection is only allowed after submission.")
         return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
@@ -263,7 +277,8 @@ def adviser_final_approve_view(request, pk):
 def finance_dashboard(request):
     pending = Enlistment.objects.filter(status=Enlistment.Status.FINANCE_REVIEW)
     holds = Enlistment.objects.filter(status__in=[Enlistment.Status.FINANCE_HOLD_BALANCE, Enlistment.Status.FINANCE_HOLD_ACADEMIC])
-    return render(request, "enrollment/finance_dashboard.html", {"pending": pending, "holds": holds})
+    window = EnrollmentWindow.get_solo()
+    return render(request, "enrollment/finance_dashboard.html", {"pending": pending, "holds": holds, "window": window})
 
 @login_required
 @role_required("FINANCE")
@@ -278,6 +293,25 @@ def finance_review_view(request, pk):
     except Exception as e:
         messages.error(request, str(e))
     return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+@login_required
+@role_required("FINANCE")
+def finance_toggle_enrollment(request):
+    window = EnrollmentWindow.get_solo()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        message = request.POST.get("message", "").strip()
+        if action == "close":
+            window.is_open = False
+            window.message = message or "Enrollment is currently closed."
+            window.save(update_fields=["is_open", "message", "updated_at"])
+            messages.success(request, "Enrollment closed.")
+        elif action == "open":
+            window.is_open = True
+            window.message = ""
+            window.save(update_fields=["is_open", "message", "updated_at"])
+            messages.success(request, "Enrollment opened.")
+    return redirect("enrollment:finance_dashboard")
 
 @login_required
 @role_required("FINANCE")
