@@ -1,38 +1,97 @@
 {% extends "base.html" %}
-{% block title %}Student Dashboard{% endblock %}
+{% block title %}Student Profile{% endblock %}
 {% block content %}
-<div class="card">
-  <h2>Student Dashboard</h2>
-  <p class="subtle">Submit one enlistment per term. If it’s rejected, you can apply again.</p>
-  <div class="actions">
-    <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a>
-  </div>
-</div>
+<div class="layout">
+  <aside class="side-nav">
+    <h4>Student Profile</h4>
+    <a class="active" href="#personal">Personal Details</a>
+    <a href="#address">Address Details</a>
+    <a href="#course">Course Details</a>
+    <a href="#enlistments">Enlisted Subjects</a>
+    <a href="#schedule">Class Schedule</a>
+  </aside>
 
-<div class="card" style="margin-top:14px;">
-  <h3>Your Enlistments</h3>
-  <table>
-    <thead>
-      <tr><th>ID</th><th>Category</th><th>Term</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-      {% for e in enlistments %}
-      <tr>
-        <td data-label="ID">#{{ e.id }}</td>
-        <td data-label="Category">{{ e.category.name|default:"—" }}</td>
-        <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
-        <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
-        <td data-label="Actions">
-          <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">View</a>
-          {% if e.status == "APPROVED_FOR_PAYMENT" %}
-            <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Payment</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="5">No enlistments yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <section>
+    <div class="section-card" id="personal">
+      <h3 class="section-title">Personal Details</h3>
+      <div class="info-grid">
+        <div class="info-row"><strong>Student ID</strong><span>{{ user.student_number }}</span></div>
+        <div class="info-row"><strong>Course</strong><span>{{ profile.program|default:"?" }}</span></div>
+        <div class="info-row"><strong>Campus</strong><span>?</span></div>
+        <div class="info-row"><strong>Curriculum</strong><span>?</span></div>
+        <div class="info-row"><strong>College</strong><span>?</span></div>
+        <div class="info-row"><strong>Semester Name</strong>
+          <span>{% if latest_enlistment %}{{ latest_enlistment.semester }}{% else %}?{% endif %}</span>
+        </div>
+      </div>
+
+      <div class="field-grid" style="margin-top:14px;">
+        <div class="field">
+          <label>Last Name</label>
+          <div class="value">{{ user.last_name|default:"?" }}</div>
+        </div>
+        <div class="field">
+          <label>First Name</label>
+          <div class="value">{{ user.first_name|default:"?" }}</div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <div class="value">{{ user.email|default:"?" }}</div>
+        </div>
+        <div class="field">
+          <label>Year Level</label>
+          <div class="value">{{ profile.year_level|default:"?" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" id="address">
+      <h3 class="section-title">Address Details</h3>
+      <p class="subtle">No address data yet.</p>
+    </div>
+
+    <div class="section-card" id="course">
+      <h3 class="section-title">Course Details</h3>
+      <div class="info-grid">
+        <div class="info-row"><strong>Program</strong><span>{{ profile.program|default:"?" }}</span></div>
+        <div class="info-row"><strong>Year Level</strong><span>{{ profile.year_level|default:"?" }}</span></div>
+      </div>
+    </div>
+
+    <div class="section-card" id="enlistments">
+      <h3 class="section-title">Enlisted Subjects</h3>
+      <div class="actions" style="margin-bottom:8px;">
+        <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for e in enlistments %}
+          <tr>
+            <td data-label="Category">{{ e.category.name|default:"?" }}</td>
+            <td data-label="Program">{{ e.program.name|default:"?" }}</td>
+            <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+            <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
+            <td data-label="Actions">
+              <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">View</a>
+              {% if e.status == "APPROVED_FOR_PAYMENT" %}
+                <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Payment</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">No enlistments yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card" id="schedule">
+      <h3 class="section-title">Class Schedule</h3>
+      <p class="subtle">Schedule details will appear here.</p>
+    </div>
+  </section>
 </div>
 {% endblock %}

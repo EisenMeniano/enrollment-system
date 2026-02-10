@@ -6,7 +6,13 @@ app_name = "enrollment"
 urlpatterns = [
     # Student
     path("student/", views.student_dashboard, name="student_dashboard"),
+    path("student/profile/", views.student_profile_personal, name="student_profile_personal"),
+    path("student/profile/address/", views.student_profile_address, name="student_profile_address"),
+    path("student/profile/course/", views.student_profile_course, name="student_profile_course"),
+    path("student/profile/enlisted/", views.student_profile_enlisted, name="student_profile_enlisted"),
+    path("student/profile/schedule/", views.student_profile_schedule, name="student_profile_schedule"),
     path("student/new/", views.student_enlistment_create, name="enlistment_create"),
+    path("student/subjects/<int:pk>/", views.student_subject_select, name="student_subject_select"),
     path("student/pay/<int:pk>/", views.student_pay, name="student_pay"),
 
     # Adviser

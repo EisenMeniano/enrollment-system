@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Enlisted Subjects{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="enlisted" %}
+  <section>
+    <div class="section-card">
+      <h3 class="section-title">Enlisted Subjects</h3>
+      <div class="actions" style="margin-bottom:8px;">
+        <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for e in enlistments %}
+          <tr>
+            <td data-label="Category">{{ e.category.name|default:"—" }}</td>
+            <td data-label="Program">{{ e.program.name|default:"—" }}</td>
+            <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+            <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
+            <td data-label="Actions">
+              <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">View</a>
+              {% if e.status == "APPROVED_FOR_PAYMENT" %}
+                <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Payment</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">No enlistments yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

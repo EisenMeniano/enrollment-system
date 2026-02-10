@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Class Schedule{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="schedule" %}
+  <section>
+    <div class="section-card">
+      <h3 class="section-title">Class Schedule</h3>
+      <p class="subtle">Schedule details will appear here.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

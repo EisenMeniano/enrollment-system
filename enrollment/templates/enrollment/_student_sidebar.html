@@ -1,0 +1,8 @@
+<aside class="side-nav">
+  <h4>Student Profile</h4>
+  <a class="{% if active == 'personal' %}active{% endif %}" href="{% url 'enrollment:student_profile_personal' %}">Personal Details</a>
+  <a class="{% if active == 'address' %}active{% endif %}" href="{% url 'enrollment:student_profile_address' %}">Address Details</a>
+  <a class="{% if active == 'course' %}active{% endif %}" href="{% url 'enrollment:student_profile_course' %}">Course Details</a>
+  <a class="{% if active == 'enlisted' %}active{% endif %}" href="{% url 'enrollment:student_profile_enlisted' %}">Enlisted Subjects</a>
+  <a class="{% if active == 'schedule' %}active{% endif %}" href="{% url 'enrollment:student_profile_schedule' %}">Class Schedule</a>
+</aside>

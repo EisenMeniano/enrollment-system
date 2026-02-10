@@ -31,7 +31,11 @@
         radial-gradient(900px 500px at 90% -20%, #e7f5f0 0%, transparent 55%),
         linear-gradient(180deg, #f7f2ee 0%, #f5f1ec 100%);
       min-height:100vh;
+      opacity:0;
+      transition:opacity .16s ease-out;
     }
+    body.page-ready{opacity:1}
+    body.page-exit{opacity:0; transition:opacity .12s ease-in}
     header{
       background:linear-gradient(120deg, #394e25 0%, #4e6a32 100%);
       color:#f7f3e6;
@@ -58,6 +62,79 @@
       padding:18px 20px;
       box-shadow:var(--shadow);
     }
+    .layout{
+      display:grid;
+      grid-template-columns: 220px 1fr;
+      gap:16px;
+      align-items:start;
+    }
+    .side-nav{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:10px;
+      position:sticky;
+      top:18px;
+    }
+    .side-nav h4{margin:6px 8px 10px;font-size:16px}
+    .side-nav a{
+      display:block;
+      padding:10px 12px;
+      border-radius:10px;
+      color:var(--ink);
+      text-decoration:none;
+      font-weight:600;
+    }
+    .side-nav a.active, .side-nav a:hover{
+      background:#f7f3e6;
+      color:#394e25;
+    }
+    .section-card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:16px 18px;
+      margin-bottom:14px;
+    }
+    .section-title{
+      margin:0 0 12px;
+      font-size:18px;
+      border-bottom:1px solid #eee5d8;
+      padding-bottom:8px;
+    }
+    .info-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px 18px;
+      font-size:14px;
+    }
+    .info-row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px dashed #eee5d8;
+      padding-bottom:6px;
+    }
+    .info-row strong{color:var(--muted);font-weight:600}
+    .field-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:12px 18px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:14px;
+    }
+    .field .value{
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+    }
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
     .btn{
       background:var(--primary);
@@ -71,7 +148,8 @@
       align-items:center;
       gap:8px;
       font-weight:600;
-      transition:transform .05s ease, background .2s ease;
+      transition:transform .08s ease, background .2s ease, box-shadow .2s ease;
+      box-shadow:0 4px 12px rgba(57,78,37,.12);
     }
     .btn.equal{
       width:110px;
@@ -83,7 +161,7 @@
       justify-content:center;
     }
     .btn:hover{background:var(--primary-dark)}
-    .btn:active{transform:translateY(1px)}
+    .btn:active{transform:translateY(1px) scale(.98)}
     .btn.secondary{background:#2f2f39;color:#f4f4f4;border-color:#2f2f39}
     .btn.gray{background:#6a6a75;color:#f4f4f4;border-color:#6a6a75}
     .pill{
@@ -227,8 +305,14 @@
       color:#f7f3e6;
       text-decoration:none;
       font-weight:600;
+      transition:transform .08s ease, background .2s ease;
     }
     .back-link:hover{ background:rgba(255,255,255,.28); }
+    .back-link:active{ transform:translateY(1px); }
+
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important; animation:none !important;}
+    }
 
     /* Inputs focus + accents */
     input:focus, select:focus, textarea:focus{
@@ -239,6 +323,8 @@
 
     @media (max-width:720px){
       header{flex-direction:column;gap:10px;align-items:flex-start}
+      .layout{grid-template-columns:1fr}
+      .side-nav{position:static}
       table, thead, tbody, th, td, tr{display:block}
       th{display:none}
       td{border-bottom:1px solid #efe9e1}
@@ -249,7 +335,7 @@
 <body>
   <header>
     <div style="display:flex;align-items:center;gap:12px;">
-      <a href="javascript:history.back()" class="back-link" aria-label="Go back">←</a>
+      <a href="#" class="back-link" aria-label="Go back">&larr;</a>
       <div class="brand">
         <img class="brand-logo" src="{% static 'img/logo_bkg.svg' %}" alt="Enrollment System logo"/>
         <a href="/">Enrollment System</a>
@@ -283,7 +369,13 @@
                   {{ user.student_number }}
                 {% endif %}
               </div>
-              <div class="profile-role">{{ user.role }}</div>
+              <div class="profile-role">
+                {% if user.program %}
+                  {{ user.program }}
+                {% else %}
+                  {{ user.role }}
+                {% endif %}
+              </div>
             </div>
             <div class="profile-links">
               <a href="/">Home</a>
@@ -311,4 +403,33 @@
     {% block content %}{% endblock %}
   </main>
 </body>
+<script>
+  (function () {
+    function markReady() {
+      document.body.classList.remove("page-exit");
+      document.body.classList.add("page-ready");
+    }
+    window.addEventListener("DOMContentLoaded", markReady);
+    window.addEventListener("pageshow", markReady);
+    const backLink = document.querySelector(".back-link");
+    if (backLink) {
+      backLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.body.classList.add("page-exit");
+        setTimeout(() => { history.back(); }, 120);
+      });
+    }
+    document.querySelectorAll("a").forEach((a) => {
+      a.addEventListener("click", function (e) {
+        const href = a.getAttribute("href");
+        if (!href || href.startsWith("#") || href.startsWith("javascript:")) {
+          return;
+        }
+        e.preventDefault();
+        document.body.classList.add("page-exit");
+        setTimeout(() => { window.location.href = href; }, 120);
+      });
+    });
+  })();
+</script>
 </html>

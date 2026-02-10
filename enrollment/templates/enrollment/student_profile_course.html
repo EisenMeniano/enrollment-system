@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Course Details{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="course" %}
+  <section>
+    <div class="section-card">
+      <h3 class="section-title">Course Details</h3>
+      <form method="post">
+        {% csrf_token %}
+        <div class="field-grid">
+          <div class="field">
+            <label>Program</label>
+            {{ form.program }}
+          </div>
+          <div class="field">
+            <label>Year Level</label>
+            {{ form.year_level }}
+          </div>
+          <div class="field">
+            <label>Campus</label>
+            {{ form.campus }}
+          </div>
+          <div class="field">
+            <label>College</label>
+            {{ form.college }}
+          </div>
+          <div class="field">
+            <label>Curriculum</label>
+            {{ form.curriculum }}
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn" type="submit">Save Changes</button>
+          <a class="btn secondary" href="{% url 'enrollment:student_profile_course' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

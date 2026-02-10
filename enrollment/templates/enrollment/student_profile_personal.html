@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Personal Details{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="personal" %}
+  <section>
+    <div class="section-card">
+      <h3 class="section-title">Personal Details</h3>
+      <div class="info-grid">
+        <div class="info-row"><strong>Student ID</strong><span>{{ user.student_number }}</span></div>
+        <div class="info-row"><strong>Course</strong><span>{{ profile.program|default:"—" }}</span></div>
+        <div class="info-row"><strong>Campus</strong><span>{{ profile.campus|default:"—" }}</span></div>
+        <div class="info-row"><strong>Curriculum</strong><span>{{ profile.curriculum|default:"—" }}</span></div>
+        <div class="info-row"><strong>College</strong><span>{{ profile.college|default:"—" }}</span></div>
+        <div class="info-row"><strong>Year Level</strong><span>{{ profile.year_level|default:"—" }}</span></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3 class="section-title">Edit Information</h3>
+      <form method="post">
+        {% csrf_token %}
+        <div class="field-grid">
+          <div class="field">
+            <label>Last Name</label>
+            {{ user_form.last_name }}
+          </div>
+          <div class="field">
+            <label>First Name</label>
+            {{ user_form.first_name }}
+          </div>
+          <div class="field">
+            <label>Middle Name</label>
+            {{ profile_form.middle_name }}
+          </div>
+          <div class="field">
+            <label>Extension Name</label>
+            {{ profile_form.extension_name }}
+          </div>
+          <div class="field">
+            <label>Email</label>
+            {{ user_form.email }}
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            {{ profile_form.gender }}
+          </div>
+          <div class="field">
+            <label>Date of Birth</label>
+            {{ profile_form.birth_date }}
+          </div>
+          <div class="field">
+            <label>Place of Birth</label>
+            {{ profile_form.place_of_birth }}
+          </div>
+          <div class="field">
+            <label>Civil Status</label>
+            {{ profile_form.civil_status }}
+          </div>
+          <div class="field">
+            <label>Citizenship</label>
+            {{ profile_form.citizenship }}
+          </div>
+          <div class="field">
+            <label>Dual Citizenship</label>
+            {{ profile_form.dual_citizenship }}
+          </div>
+          <div class="field">
+            <label>Religion</label>
+            {{ profile_form.religion }}
+          </div>
+          <div class="field">
+            <label>Student's Mobile No.</label>
+            {{ profile_form.mobile_no }}
+          </div>
+          <div class="field">
+            <label>Facebook Name</label>
+            {{ profile_form.facebook_name }}
+          </div>
+          <div class="field">
+            <label>Facebook Link</label>
+            {{ profile_form.facebook_link }}
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn" type="submit">Save Changes</button>
+          <a class="btn secondary" href="{% url 'enrollment:student_profile_personal' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

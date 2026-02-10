@@ -3,9 +3,10 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
-from accounts.models import User
-from .models import Enlistment, HistoryLog
-from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm
+from accounts.models import User, StudentProfile
+from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm
+from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject
+from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
 from .services import (
     student_submit_enlistment,
     adviser_preapprove,
@@ -39,8 +40,7 @@ def dashboard(request):
 @login_required
 @role_required("STUDENT")
 def student_dashboard(request):
-    enlistments = Enlistment.objects.filter(student=request.user)
-    return render(request, "enrollment/student_dashboard.html", {"enlistments": enlistments})
+    return redirect("enrollment:student_profile_personal")
 
 @login_required
 @role_required("STUDENT")
@@ -52,12 +52,13 @@ def student_enlistment_create(request):
                 enlistment = student_submit_enlistment(
                     request.user,
                     category=form.cleaned_data["category"],
+                    program=form.cleaned_data["program"],
                     school_year=form.cleaned_data["school_year"].label,
                     semester=form.cleaned_data["semester"].name,
                     notes=form.cleaned_data.get("notes", ""),
                 )
                 messages.success(request, "Enlistment submitted. Waiting for adviser review.")
-                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+                return redirect("enrollment:student_subject_select", pk=enlistment.pk)
             except ValidationError as e:
                 form.add_error(None, e.messages[0] if e.messages else "Unable to submit enlistment.")
     else:
@@ -89,6 +90,111 @@ def student_pay(request, pk):
     else:
         form = PaymentForm()
     return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form, "payment": payment})
+
+@login_required
+@role_required("STUDENT")
+def student_subject_select(request, pk):
+    enlistment = get_object_or_404(Enlistment, pk=pk, student=request.user)
+    if enlistment.status not in [Enlistment.Status.SUBMITTED, Enlistment.Status.RETURNED]:
+        messages.error(request, "Subject selection is only allowed after submission.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+    selected = list(enlistment.next_subjects.values_list("subject_id", flat=True))
+    if request.method == "POST":
+        form = StudentSubjectSelectForm(request.POST)
+        if form.is_valid():
+            EnlistmentSubject.objects.filter(enlistment=enlistment).delete()
+            for subject in form.cleaned_data["subjects"]:
+                EnlistmentSubject.objects.create(enlistment=enlistment, subject=subject)
+            messages.success(request, "Subjects saved.")
+            return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+    else:
+        form = StudentSubjectSelectForm(initial={"subjects": list(selected)})
+
+    subjects = Subject.objects.all().order_by("code")
+    return render(
+        request,
+        "enrollment/student_subject_select.html",
+        {"enlistment": enlistment, "form": form, "subjects": subjects, "selected_ids": set(selected)},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_personal(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        user_form = PersonalDetailsUserForm(request.POST, instance=request.user)
+        profile_form = PersonalDetailsProfileForm(request.POST, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "Personal details updated.")
+            return redirect("enrollment:student_profile_personal")
+    else:
+        user_form = PersonalDetailsUserForm(instance=request.user)
+        profile_form = PersonalDetailsProfileForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_personal.html",
+        {"profile": profile, "user_form": user_form, "profile_form": profile_form},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_address(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = AddressDetailsForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Address details updated.")
+            return redirect("enrollment:student_profile_address")
+    else:
+        form = AddressDetailsForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_address.html",
+        {"profile": profile, "form": form},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_course(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        form = CourseDetailsForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course details updated.")
+            return redirect("enrollment:student_profile_course")
+    else:
+        form = CourseDetailsForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_course.html",
+        {"profile": profile, "form": form},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_enlisted(request):
+    enlistments = Enlistment.objects.filter(student=request.user)
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_enlisted.html",
+        {"enlistments": enlistments, "profile": profile},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_schedule(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_schedule.html",
+        {"profile": profile},
+    )
 
 # ---------------------- ADVISER ----------------------
 @login_required

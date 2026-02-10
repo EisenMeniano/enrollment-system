@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Select Subjects{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Step 2: Subjects</h2>
+  <p class="subtle">Choose the subjects you want to enlist for this term.</p>
+  <div class="actions">
+    <span class="pill">Step 1: Student Details</span>
+    <span class="pill">Step 2: Subjects</span>
+    <span class="pill">Step 3: Status</span>
+  </div>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <form method="post">
+    {% csrf_token %}
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Code</th>
+          <th>Subject</th>
+          <th>Units</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for subject in subjects %}
+        <tr>
+          <td data-label="Select">
+            <input type="checkbox" name="subjects" value="{{ subject.id }}"
+              {% if subject.id in selected_ids %}checked{% endif %}>
+          </td>
+          <td data-label="Code">{{ subject.code }}</td>
+          <td data-label="Subject">{{ subject.title }}</td>
+          <td data-label="Units">{{ subject.units }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No subjects available. Add subjects in admin.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="actions" style="margin-top:12px;">
+      <button class="btn" type="submit">Save Subjects</button>
+      <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Skip for Now</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
