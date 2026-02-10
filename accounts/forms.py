@@ -44,11 +44,17 @@ class AddressDetailsForm(forms.ModelForm):
     class Meta:
         model = StudentProfile
         fields = [
-            "address_line",
-            "city",
-            "province",
-            "postal_code",
-            "country",
+            "current_address_line",
+            "current_country",
+            "current_province",
+            "current_city",
+            "current_postal_code",
+            "same_as_current",
+            "permanent_address_line",
+            "permanent_country",
+            "permanent_province",
+            "permanent_city",
+            "permanent_postal_code",
         ]
 
 
@@ -61,4 +67,14 @@ class CourseDetailsForm(forms.ModelForm):
             "campus",
             "college",
             "curriculum",
+            "intake",
+            "learning_modality",
+            "advisor_name",
+            "mentor_name",
         ]
+
+
+class PhotoSignatureForm(forms.ModelForm):
+    class Meta:
+        model = StudentProfile
+        fields = ["photo_file", "signature_file"]

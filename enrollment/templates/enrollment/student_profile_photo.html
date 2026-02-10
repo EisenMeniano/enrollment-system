@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Photo Signature{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="photo" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Photo Signature</h3>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="field-grid">
+          <div class="field">
+            <label>Photo</label>
+            {% if profile.photo_file %}
+              <div class="value" style="margin-bottom:8px;">{{ profile.photo_file.name }}</div>
+            {% endif %}
+            {{ form.photo_file }}
+            <div class="helptext">JPG/PNG recommended. Max 1MB.</div>
+          </div>
+          <div class="field">
+            <label>Signature</label>
+            {% if profile.signature_file %}
+              <div class="value" style="margin-bottom:8px;">{{ profile.signature_file.name }}</div>
+            {% endif %}
+            {{ form.signature_file }}
+            <div class="helptext">JPG/PNG recommended. Max 500KB.</div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn" type="submit">Save Changes</button>
+          <a class="btn secondary" href="{% url 'enrollment:student_profile_photo' %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

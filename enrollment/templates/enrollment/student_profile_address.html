@@ -4,30 +4,60 @@
 <div class="layout">
   {% include "enrollment/_student_sidebar.html" with active="address" %}
   <section>
+    {% include "enrollment/_student_topinfo.html" %}
     <div class="section-card">
       <h3 class="section-title">Address Details</h3>
       <form method="post">
         {% csrf_token %}
+        <h4 style="margin:8px 0;">Current Address</h4>
         <div class="field-grid">
           <div class="field">
             <label>Address</label>
-            {{ form.address_line }}
-          </div>
-          <div class="field">
-            <label>City</label>
-            {{ form.city }}
-          </div>
-          <div class="field">
-            <label>Province</label>
-            {{ form.province }}
-          </div>
-          <div class="field">
-            <label>Postal Code</label>
-            {{ form.postal_code }}
+            {{ form.current_address_line }}
           </div>
           <div class="field">
             <label>Country</label>
-            {{ form.country }}
+            {{ form.current_country }}
+          </div>
+          <div class="field">
+            <label>Province</label>
+            {{ form.current_province }}
+          </div>
+          <div class="field">
+            <label>City / Municipality</label>
+            {{ form.current_city }}
+          </div>
+          <div class="field">
+            <label>Postal Code</label>
+            {{ form.current_postal_code }}
+          </div>
+        </div>
+
+        <h4 style="margin:16px 0 8px;">Permanent Address</h4>
+        <div class="field">
+          <label>Same as Current Address?</label>
+          {{ form.same_as_current }}
+        </div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Address</label>
+            {{ form.permanent_address_line }}
+          </div>
+          <div class="field">
+            <label>Country</label>
+            {{ form.permanent_country }}
+          </div>
+          <div class="field">
+            <label>Province</label>
+            {{ form.permanent_province }}
+          </div>
+          <div class="field">
+            <label>City / Municipality</label>
+            {{ form.permanent_city }}
+          </div>
+          <div class="field">
+            <label>Postal Code</label>
+            {{ form.permanent_postal_code }}
           </div>
         </div>
         <div class="actions" style="margin-top:12px;">

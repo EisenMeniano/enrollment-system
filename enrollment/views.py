@@ -4,8 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
 from accounts.models import User, StudentProfile
-from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm
-from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject, EnrollmentWindow
+from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm, PhotoSignatureForm
+from .models import Enlistment, HistoryLog, EnlistmentSubject, Subject, EnrollmentWindow, SchoolYear
 from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
 from .services import (
     student_submit_enlistment,
@@ -136,6 +136,7 @@ def student_subject_select(request, pk):
 @role_required("STUDENT")
 def student_profile_personal(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     if request.method == "POST":
         user_form = PersonalDetailsUserForm(request.POST, instance=request.user)
         profile_form = PersonalDetailsProfileForm(request.POST, instance=profile)
@@ -150,13 +151,14 @@ def student_profile_personal(request):
     return render(
         request,
         "enrollment/student_profile_personal.html",
-        {"profile": profile, "user_form": user_form, "profile_form": profile_form},
+        {"profile": profile, "user_form": user_form, "profile_form": profile_form, "latest_enlistment": latest_enlistment},
     )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_address(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     if request.method == "POST":
         form = AddressDetailsForm(request.POST, instance=profile)
         if form.is_valid():
@@ -168,13 +170,14 @@ def student_profile_address(request):
     return render(
         request,
         "enrollment/student_profile_address.html",
-        {"profile": profile, "form": form},
+        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment},
     )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_course(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     if request.method == "POST":
         form = CourseDetailsForm(request.POST, instance=profile)
         if form.is_valid():
@@ -186,7 +189,7 @@ def student_profile_course(request):
     return render(
         request,
         "enrollment/student_profile_course.html",
-        {"profile": profile, "form": form},
+        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment},
     )
 
 @login_required
@@ -194,21 +197,98 @@ def student_profile_course(request):
 def student_profile_enlisted(request):
     enlistments = Enlistment.objects.filter(student=request.user)
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = enlistments.first()
     return render(
         request,
         "enrollment/student_profile_enlisted.html",
-        {"enlistments": enlistments, "profile": profile},
+        {"enlistments": enlistments, "profile": profile, "latest_enlistment": latest_enlistment},
     )
 
 @login_required
 @role_required("STUDENT")
 def student_profile_schedule(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
     return render(
         request,
         "enrollment/student_profile_schedule.html",
-        {"profile": profile},
+        {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment},
     )
+
+def _student_profile_placeholder(request, active, title):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    return render(
+        request,
+        "enrollment/student_profile_placeholder.html",
+        {"profile": profile, "active": active, "title": title},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_photo(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    if request.method == "POST":
+        form = PhotoSignatureForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Photo and signature updated.")
+            return redirect("enrollment:student_profile_photo")
+    else:
+        form = PhotoSignatureForm(instance=profile)
+    return render(
+        request,
+        "enrollment/student_profile_photo.html",
+        {"profile": profile, "form": form, "latest_enlistment": latest_enlistment},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_grade(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    sessions = SchoolYear.objects.order_by("-label")
+    return render(
+        request,
+        "enrollment/student_profile_grade.html",
+        {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment},
+    )
+
+@login_required
+@role_required("STUDENT")
+def student_profile_attendance(request):
+    return _student_profile_placeholder(request, "attendance", "Attendance")
+
+@login_required
+@role_required("STUDENT")
+def student_profile_overall(request):
+    return _student_profile_placeholder(request, "overall", "Overall Result")
+
+@login_required
+@role_required("STUDENT")
+def student_profile_permit(request):
+    return _student_profile_placeholder(request, "permit", "Exam Permit")
+
+@login_required
+@role_required("STUDENT")
+def student_profile_document(request):
+    return _student_profile_placeholder(request, "document", "Document")
+
+@login_required
+@role_required("STUDENT")
+def student_profile_exam_schedule(request):
+    return _student_profile_placeholder(request, "exam_schedule", "Exam Schedule")
+
+@login_required
+@role_required("STUDENT")
+def student_profile_deferment(request):
+    return _student_profile_placeholder(request, "deferment", "Apply Deferment")
+
+@login_required
+@role_required("STUDENT")
+def student_profile_curriculum(request):
+    return _student_profile_placeholder(request, "curriculum", "Curriculum Progressions")
 
 # ---------------------- ADVISER ----------------------
 @login_required
