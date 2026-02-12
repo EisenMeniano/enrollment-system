@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from decimal import Decimal, ROUND_DOWN
 
 from accounts.models import User, StudentProfile
 from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm, PhotoSignatureForm
@@ -271,6 +272,24 @@ def _student_profile_placeholder(request, active, title):
         {"profile": profile, "active": active, "title": title},
     )
 
+
+def _build_payment_breakdown(enlistment):
+    zero = Decimal("0.00")
+    total = zero
+    if enlistment and getattr(enlistment, "payment", None):
+        total = enlistment.payment.amount or zero
+    base_term = (total / Decimal("3")).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+    prelim = base_term
+    midterm = base_term
+    final = (total - prelim - midterm).quantize(Decimal("0.01"))
+    return {
+        "total": total,
+        "down_payment": prelim,
+        "prelim": prelim,
+        "midterm": midterm,
+        "final": final,
+    }
+
 @login_required
 @role_required("STUDENT")
 def student_profile_photo(request):
@@ -477,10 +496,16 @@ def student_downpayment(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     menu_items = StudentProfileMenuItem.get_menu()
+    payment_breakdown = _build_payment_breakdown(latest_enlistment)
     return render(
         request,
         "enrollment/student_downpayment.html",
-        {"profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
+        {
+            "profile": profile,
+            "latest_enlistment": latest_enlistment,
+            "menu_items": menu_items,
+            "payment_breakdown": payment_breakdown,
+        },
     )
 
 
@@ -509,10 +534,16 @@ def student_my_payment(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     menu_items = StudentProfileMenuItem.get_menu()
+    payment_breakdown = _build_payment_breakdown(latest_enlistment)
     return render(
         request,
         "enrollment/student_my_payment.html",
-        {"profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
+        {
+            "profile": profile,
+            "latest_enlistment": latest_enlistment,
+            "menu_items": menu_items,
+            "payment_breakdown": payment_breakdown,
+        },
     )
 
 

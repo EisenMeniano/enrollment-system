@@ -283,47 +283,23 @@
         <tbody>
           <tr>
             <td>DOWN PAYMENT AMOUNT</td>
-            <td class="amount">0.00</td>
+            <td class="amount">{{ payment_breakdown.down_payment|floatformat:2 }}</td>
           </tr>
           <tr>
             <td>Prelim (1st Term)</td>
-            <td class="amount">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount">{{ payment_breakdown.prelim|floatformat:2 }}</td>
           </tr>
           <tr>
             <td>Midterm (2nd Term)</td>
-            <td class="amount">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount">{{ payment_breakdown.midterm|floatformat:2 }}</td>
           </tr>
           <tr>
             <td>Final (3rd Term)</td>
-            <td class="amount">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount">{{ payment_breakdown.final|floatformat:2 }}</td>
           </tr>
           <tr>
             <td style="font-weight:700;">Total Amount</td>
-            <td class="amount" style="font-weight:700;">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {{ latest_enlistment.payment.amount }}
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount" style="font-weight:700;">{{ payment_breakdown.total|floatformat:2 }}</td>
           </tr>
         </tbody>
       </table>

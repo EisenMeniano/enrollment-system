@@ -192,25 +192,26 @@
       <div class="pay-toolbar">
         <div class="pay-field">
           <label><span class="req">*</span>Payment Type</label>
-          <select>
-            <option>DP</option>
-            <option>Full Payment</option>
-            <option>Installment</option>
+          <select id="paymentType">
+            <option value="">Please Select</option>
+            <option value="FULL">Full Payment</option>
+            <option value="INSTALLMENT">Installment</option>
           </select>
         </div>
         <div class="pay-field">
           <label><span class="req">*</span>Semester</label>
-          <select>
+          <select id="paymentSemester">
             {% if latest_enlistment %}
+              <option value="">---</option>
               <option>{{ latest_enlistment.school_year }} - {{ latest_enlistment.semester }}</option>
             {% else %}
-              <option>---</option>
+              <option value="">---</option>
             {% endif %}
           </select>
         </div>
         <div class="pay-actions">
-          <button class="btn" type="button">Show</button>
-          <button class="btn secondary" type="button">Clear</button>
+          <button class="btn" id="btnShowPayment" type="button">Show</button>
+          <button class="btn secondary" id="btnClearPayment" type="button">Clear</button>
         </div>
       </div>
 
@@ -223,49 +224,29 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
+          <tr data-fee="installment">
             <td>DOWN PAYMENT AMOUNT</td>
-            <td class="amount">0.00</td>
+            <td class="amount">{{ payment_breakdown.down_payment|floatformat:2 }}</td>
           </tr>
-          <tr>
+          <tr data-fee="installment">
             <td>Prelim (1st Term)</td>
-            <td class="amount">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount">{{ payment_breakdown.prelim|floatformat:2 }}</td>
           </tr>
-          <tr>
+          <tr data-fee="installment">
             <td>Midterm (2nd Term)</td>
-            <td class="amount">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount">{{ payment_breakdown.midterm|floatformat:2 }}</td>
           </tr>
-          <tr>
+          <tr data-fee="installment">
             <td>Final (3rd Term)</td>
-            <td class="amount">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount">{{ payment_breakdown.final|floatformat:2 }}</td>
+          </tr>
+          <tr data-fee="full">
+            <td>FULL PAYMENT</td>
+            <td class="amount">{{ payment_breakdown.total|floatformat:2 }}</td>
           </tr>
           <tr>
             <td style="font-weight:700;">Total Amount</td>
-            <td class="amount" style="font-weight:700;">
-              {% if latest_enlistment and latest_enlistment.payment %}
-                {{ latest_enlistment.payment.amount }}
-              {% else %}
-                0.00
-              {% endif %}
-            </td>
+            <td class="amount" style="font-weight:700;">{{ payment_breakdown.total|floatformat:2 }}</td>
           </tr>
         </tbody>
       </table>
@@ -336,4 +317,39 @@
     </div>
   </section>
 </div>
+<script>
+  (function () {
+    var showBtn = document.getElementById("btnShowPayment");
+    var clearBtn = document.getElementById("btnClearPayment");
+    var typeSelect = document.getElementById("paymentType");
+    var semesterSelect = document.getElementById("paymentSemester");
+    var feeRows = document.querySelectorAll("[data-fee]");
+
+    function setFeeVisibility(mode) {
+      feeRows.forEach(function (row) {
+        var feeType = row.getAttribute("data-fee");
+        if (!mode) {
+          row.style.display = "";
+          return;
+        }
+        row.style.display = feeType === mode ? "" : "none";
+      });
+    }
+
+    function showResults() {
+      if (typeSelect.value && semesterSelect.value) {
+        setFeeVisibility(typeSelect.value === "FULL" ? "full" : "installment");
+      }
+    }
+
+    function clearResults() {
+      typeSelect.value = "";
+      semesterSelect.value = "";
+      setFeeVisibility(null);
+    }
+
+    showBtn.addEventListener("click", showResults);
+    clearBtn.addEventListener("click", clearResults);
+  })();
+</script>
 {% endblock %}
