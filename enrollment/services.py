@@ -158,16 +158,20 @@ def adviser_final_approve_and_add_subjects(user, enlistment, subject_ids):
     return enlistment
 
 @transaction.atomic
-def student_mark_paid(student, enlistment, reference=""):
+def student_mark_paid(student, enlistment, amount, reference=""):
     if enlistment.student_id != student.id:
         raise PermissionDenied("Not your enlistment.")
     if enlistment.status != Enlistment.Status.APPROVED_FOR_PAYMENT:
         raise ValidationError("Enlistment is not approved for payment.")
 
     payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
+    if payment.amount and payment.amount > 0 and amount != payment.amount:
+        raise ValidationError(f"Payment amount must match the amount due ({payment.amount}).")
+    if payment.amount == 0:
+        payment.amount = amount
     payment.status = Payment.Status.SUCCESS
     payment.reference = reference
-    payment.save(update_fields=["status", "reference"])
+    payment.save(update_fields=["amount", "status", "reference"])
 
     enlistment.status = Enlistment.Status.ENROLLED
     enlistment.save(update_fields=["status", "updated_at"])
@@ -198,3 +202,36 @@ def finance_set_amount(user, enlistment, amount):
         message=f"Set amount to {amount}.",
     )
     return payment
+
+@transaction.atomic
+def finance_record_payment(user, enlistment, amount, reference=""):
+    require_role(user, ["FINANCE"])
+    if enlistment.status != Enlistment.Status.APPROVED_FOR_PAYMENT:
+        raise ValidationError("Payment can be recorded only when enlistment is approved for payment.")
+
+    payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
+    if payment.amount and payment.amount > 0 and amount != payment.amount:
+        raise ValidationError(f"Payment amount must match the amount due ({payment.amount}).")
+    if payment.amount == 0:
+        payment.amount = amount
+    payment.status = Payment.Status.SUCCESS
+    payment.reference = reference
+    payment.save(update_fields=["amount", "status", "reference"])
+
+    enlistment.status = Enlistment.Status.ENROLLED
+    enlistment.save(update_fields=["status", "updated_at"])
+    log_history(
+        actor=user,
+        enlistment=enlistment,
+        action=HistoryLog.Action.PAYMENT_RECORDED,
+        message=f"Payment recorded by finance. Ref: {reference}" if reference else "Payment recorded by finance.",
+    )
+    log_history(
+        actor=user,
+        enlistment=enlistment,
+        action=HistoryLog.Action.ENROLLED,
+        message="Enrollment confirmed by finance.",
+    )
+    return enlistment
+
+

@@ -30,6 +30,7 @@ from .services import (
     adviser_final_approve_and_add_subjects,
     student_mark_paid,
     finance_set_amount,
+    finance_record_payment,
 )
 
 def role_required(*roles):
@@ -104,13 +105,18 @@ def student_pay(request, pk):
         form = PaymentForm(request.POST)
         if form.is_valid():
             try:
-                student_mark_paid(request.user, enlistment, reference=form.cleaned_data.get("reference", ""))
+                student_mark_paid(
+                    request.user,
+                    enlistment,
+                    amount=form.cleaned_data["amount"],
+                    reference=form.cleaned_data.get("reference", ""),
+                )
                 messages.success(request, "Payment recorded. Enrollment confirmed.")
                 return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
             except Exception as e:
                 messages.error(request, str(e))
     else:
-        form = PaymentForm()
+        form = PaymentForm(initial={"amount": payment.amount if payment else 0, "reference": payment.reference if payment else ""})
     return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form, "payment": payment})
 
 @login_required
@@ -516,8 +522,13 @@ def adviser_final_approve_view(request, pk):
 def finance_dashboard(request):
     pending = Enlistment.objects.filter(status=Enlistment.Status.FINANCE_REVIEW)
     holds = Enlistment.objects.filter(status__in=[Enlistment.Status.FINANCE_HOLD_BALANCE, Enlistment.Status.FINANCE_HOLD_ACADEMIC])
+    approved_for_payment = Enlistment.objects.filter(status=Enlistment.Status.APPROVED_FOR_PAYMENT)
     window = EnrollmentWindow.get_solo()
-    return render(request, "enrollment/finance_dashboard.html", {"pending": pending, "holds": holds, "window": window})
+    return render(
+        request,
+        "enrollment/finance_dashboard.html",
+        {"pending": pending, "holds": holds, "approved_for_payment": approved_for_payment, "window": window},
+    )
 
 @login_required
 @role_required("FINANCE")
@@ -576,6 +587,37 @@ def finance_set_amount_view(request, pk):
         payment = getattr(enlistment, "payment", None)
         form = FinanceAmountForm(initial={"amount": payment.amount if payment else 0})
     return render(request, "enrollment/finance_set_amount.html", {"enlistment": enlistment, "form": form})
+
+@login_required
+@role_required("FINANCE")
+def finance_record_payment_view(request, pk):
+    enlistment = get_object_or_404(Enlistment, pk=pk)
+    if enlistment.status != Enlistment.Status.APPROVED_FOR_PAYMENT:
+        messages.error(request, "Payment can be entered only for enlistments approved for payment.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+    payment = getattr(enlistment, "payment", None)
+    if request.method == "POST":
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            try:
+                finance_record_payment(
+                    request.user,
+                    enlistment,
+                    amount=form.cleaned_data["amount"],
+                    reference=form.cleaned_data.get("reference", ""),
+                )
+                messages.success(request, "Payment recorded. Enrollment confirmed.")
+                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+            except Exception as e:
+                messages.error(request, str(e))
+    else:
+        form = PaymentForm(initial={"amount": payment.amount if payment else 0, "reference": payment.reference if payment else ""})
+    return render(
+        request,
+        "enrollment/finance_record_payment.html",
+        {"enlistment": enlistment, "form": form, "payment": payment},
+    )
 
 # ---------------------- HISTORY ----------------------
 @login_required

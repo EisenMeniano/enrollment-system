@@ -31,6 +31,12 @@ class SubjectSelectForm(forms.Form):
     )
 
 class PaymentForm(forms.Form):
+    amount = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        help_text="Enter payment amount.",
+    )
     reference = forms.CharField(max_length=100, required=False, help_text="Optional payment reference / OR number.")
 
 class FinanceAmountForm(forms.Form):
