@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}My Payment{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="my_payment" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">My Payment</h3>
+      <p class="subtle">Payment history will appear here.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

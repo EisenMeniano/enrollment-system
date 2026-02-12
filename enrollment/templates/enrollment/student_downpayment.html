@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Down Payment{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="downpayment" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">Down Payment</h3>
+      <p class="subtle">This section is ready for down payment details.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -77,7 +77,37 @@
       position:sticky;
       top:18px;
     }
-    .side-nav h4{margin:6px 8px 10px;font-size:16px}
+    .side-group-toggle{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:none;
+      background:var(--primary);
+      color:#f6f2e5;
+      font-weight:700;
+      cursor:pointer;
+      text-align:left;
+    }
+    .side-group-title{font-size:15px}
+    .side-group .chev{transition:transform .2s ease}
+    .side-group.collapsed .chev{transform:rotate(-90deg)}
+    .side-group-items{margin-top:8px}
+    .side-group.collapsed .side-group-items{display:none}
+    .side-group-simple{
+      margin-top:10px;
+      padding-top:8px;
+      border-top:1px solid #eee5d8;
+    }
+    .side-group-title-simple{
+      margin:6px 8px 10px;
+      font-size:16px;
+      font-weight:700;
+      color:var(--muted);
+    }
     .side-nav a{
       display:block;
       padding:10px 12px;
@@ -164,6 +194,14 @@
     .btn:active{transform:translateY(1px) scale(.98)}
     .btn.secondary{background:#2f2f39;color:#f4f4f4;border-color:#2f2f39}
     .btn.gray{background:#6a6a75;color:#f4f4f4;border-color:#6a6a75}
+    .btn.small{
+      padding:8px 14px;
+      border-radius:12px;
+      font-size:14px;
+      min-width:auto;
+      height:auto;
+      align-self:flex-start;
+    }
     .pill{
       display:inline-block;
       padding:4px 10px;
@@ -429,6 +467,25 @@
         document.body.classList.add("page-exit");
         setTimeout(() => { window.location.href = href; }, 120);
       });
+    });
+
+    document.querySelectorAll(".side-group").forEach((group) => {
+      const key = group.getAttribute("data-key") || "default";
+      const stored = localStorage.getItem("sidegroup:" + key);
+      if (stored === "collapsed") {
+        group.classList.add("collapsed");
+        const btn = group.querySelector(".side-group-toggle");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      }
+      const toggle = group.querySelector(".side-group-toggle");
+      if (toggle) {
+        toggle.addEventListener("click", function () {
+          group.classList.toggle("collapsed");
+          const collapsed = group.classList.contains("collapsed");
+          toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          localStorage.setItem("sidegroup:" + key, collapsed ? "collapsed" : "open");
+        });
+      }
     });
   })();
 </script>

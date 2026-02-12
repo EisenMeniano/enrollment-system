@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}INC Completion Apply{% endblock %}
+{% block content %}
+<div class="layout">
+  {% include "enrollment/_student_sidebar.html" with active="inc_completion" %}
+  <section>
+    {% include "enrollment/_student_topinfo.html" %}
+    <div class="section-card">
+      <h3 class="section-title">INC Completion Apply</h3>
+      <p class="subtle">INC completion application form will appear here.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

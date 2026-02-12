@@ -229,10 +229,25 @@ def student_profile_enlisted(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = enlistments.first()
     menu_items = StudentProfileMenuItem.get_menu()
+    sessions = SchoolYear.objects.order_by("-label")
+    selected_session_id = request.GET.get("session")
+    if selected_session_id:
+        try:
+            session = SchoolYear.objects.get(id=selected_session_id)
+            enlistments = enlistments.filter(school_year=session.label)
+        except SchoolYear.DoesNotExist:
+            pass
     return render(
         request,
         "enrollment/student_profile_enlisted.html",
-        {"enlistments": enlistments, "profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
+        {
+            "enlistments": enlistments,
+            "profile": profile,
+            "latest_enlistment": latest_enlistment,
+            "menu_items": menu_items,
+            "sessions": sessions,
+            "selected_session_id": selected_session_id or "",
+        },
     )
 
 @login_required
@@ -453,6 +468,64 @@ def student_profile_curriculum(request):
             "selected_session_id": selected_session_id or "",
             "menu_items": menu_items,
         },
+    )
+
+
+@login_required
+@role_required("STUDENT")
+def student_downpayment(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
+    return render(
+        request,
+        "enrollment/student_downpayment.html",
+        {"profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
+    )
+
+
+@login_required
+@role_required("STUDENT")
+def student_enlistment_page(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    enlistments = Enlistment.objects.filter(student=request.user)
+    latest_enlistment = enlistments.first()
+    menu_items = StudentProfileMenuItem.get_menu()
+    return render(
+        request,
+        "enrollment/student_enlistment_page.html",
+        {
+            "profile": profile,
+            "latest_enlistment": latest_enlistment,
+            "menu_items": menu_items,
+            "enlistments": enlistments,
+        },
+    )
+
+
+@login_required
+@role_required("STUDENT")
+def student_my_payment(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
+    return render(
+        request,
+        "enrollment/student_my_payment.html",
+        {"profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
+    )
+
+
+@login_required
+@role_required("STUDENT")
+def student_inc_completion(request):
+    profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
+    return render(
+        request,
+        "enrollment/student_inc_completion.html",
+        {"profile": profile, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
     )
 
 # ---------------------- ADVISER ----------------------

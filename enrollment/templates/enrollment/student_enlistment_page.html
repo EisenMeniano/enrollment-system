@@ -1,30 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Enlisted Subjects{% endblock %}
+{% block title %}Student Enlistment{% endblock %}
 {% block content %}
 <div class="layout">
-  {% include "enrollment/_student_sidebar.html" with active="enlisted" %}
+  {% include "enrollment/_student_sidebar.html" with active="student_enlistment" %}
   <section>
     {% include "enrollment/_student_topinfo.html" %}
     <div class="section-card">
-      <h3 class="section-title">Enlisted Subjects</h3>
-      <form method="get" class="field-grid" style="margin-bottom:12px;">
-        <div class="field">
-          <label>Academic Session</label>
-          <select name="session" onchange="this.form.submit()">
-            <option value="">Please Select</option>
-            {% for s in sessions %}
-              <option value="{{ s.id }}" {% if selected_session_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label>Advisor Name</label>
-          <input type="text" value="{{ profile.advisor_name|default:"—" }}" readonly>
-        </div>
-        <div class="field" style="align-self:end;">
-          <a class="btn small" href="#">ORF Report</a>
-        </div>
-      </form>
+      <h3 class="section-title">Student Enlistment</h3>
+      <div class="actions" style="margin-bottom:8px;">
+        <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a>
+      </div>
       <table>
         <thead>
           <tr><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th>Actions</th></tr>
