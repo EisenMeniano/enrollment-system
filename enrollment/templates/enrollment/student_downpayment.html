@@ -7,7 +7,396 @@
     {% include "enrollment/_student_topinfo.html" %}
     <div class="section-card">
       <h3 class="section-title">Down Payment</h3>
-      <p class="subtle">This section is ready for down payment details.</p>
+      <style>
+        .steps {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 18px;
+          margin: 10px 0 20px;
+        }
+        .step-card {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 14px 16px;
+          background: #fff;
+        }
+        .step-card .bar {
+          height: 4px;
+          border-radius: 999px;
+          background: #e0e0e0;
+          margin-bottom: 10px;
+        }
+        .step-card.active .bar {
+          background: repeating-linear-gradient(
+            90deg,
+            #f9a825 0,
+            #f9a825 6px,
+            transparent 6px,
+            transparent 12px
+          );
+        }
+        .step-card h4 {
+          margin: 0 0 6px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #2e7d32;
+        }
+        .step-card p {
+          margin: 0;
+          color: #455a64;
+          font-weight: 600;
+        }
+        .section-subtitle {
+          font-weight: 700;
+          color: #37474f;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          margin: 16px 0 10px;
+        }
+        .section-subtitle::before {
+          content: "";
+          width: 3px;
+          height: 16px;
+          background: #2e7d32;
+          display: inline-block;
+        }
+        .info-pairs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        .info-box {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .info-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+          border-bottom: 0;
+        }
+        .info-row div {
+          padding: 10px 12px;
+        }
+        .info-row .label {
+          font-weight: 700;
+          color: #455a64;
+        }
+        .info-row .value {
+          text-align: right;
+          color: #1e88e5;
+          font-weight: 700;
+        }
+        .note-box {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 12px 14px;
+          background: #fff;
+        }
+        .note-box ul {
+          margin: 0;
+          padding-left: 18px;
+          color: #455a64;
+        }
+        .fees-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+        }
+        .fees-table th,
+        .fees-table td {
+          border: 1px solid #e0e0e0;
+          padding: 10px 12px;
+          text-align: left;
+        }
+        .fees-table thead th {
+          background: #f3f7ff;
+          color: #455a64;
+          font-weight: 700;
+        }
+        .fees-table .amount {
+          text-align: right;
+          white-space: nowrap;
+          width: 30%;
+        }
+        .fees-table th:first-child,
+        .fees-table td:first-child {
+          width: 70%;
+        }
+        .pay-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin: 14px 0 6px;
+        }
+        .pay-card {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 12px 14px;
+          background: #fff;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+        .pay-card h4 {
+          margin: 0 0 10px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #455a64;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .pay-card h4::before {
+          content: "";
+          width: 3px;
+          height: 16px;
+          background: #2e7d32;
+          display: inline-block;
+        }
+        .pay-card .amount-box {
+          border: 1px solid #e0e0e0;
+          border-radius: 6px;
+          padding: 10px 12px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 700;
+        }
+        .pay-card .pay-action {
+          text-align: right;
+          margin-top: 10px;
+        }
+        .pay-card .pay-action .btn {
+          padding: 6px 12px;
+        }
+        .verify-note {
+          color: #2e7d32;
+          font-weight: 700;
+          margin: 10px 0 0;
+        }
+        .receipts-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 8px;
+        }
+        .receipts-table th,
+        .receipts-table td {
+          border: 1px solid #e0e0e0;
+          padding: 8px 10px;
+          text-align: left;
+          font-size: 13px;
+        }
+        .receipts-table thead th {
+          background: #f3f7ff;
+          color: #455a64;
+          font-weight: 700;
+        }
+        .status-complete {
+          color: #2e7d32;
+          font-weight: 700;
+        }
+        @media (max-width: 900px) {
+          .steps,
+          .info-pairs,
+          .pay-row {
+            grid-template-columns: 1fr;
+          }
+        }
+      </style>
+
+      <div class="steps">
+        <div class="step-card active">
+          <div class="bar"></div>
+          <h4>STEP 1</h4>
+          <p>Student Detail</p>
+        </div>
+        <div class="step-card">
+          <div class="bar"></div>
+          <h4>STEP 2</h4>
+          <p>Payment</p>
+        </div>
+        <div class="step-card">
+          <div class="bar"></div>
+          <h4>STEP 3</h4>
+          <p>Down Payment Status</p>
+        </div>
+      </div>
+
+      <div class="section-subtitle">Student Details</div>
+      <div class="info-pairs">
+        <div class="info-box">
+          <div class="info-row">
+            <div class="label">Current Semester</div>
+            <div class="value">
+              {% if latest_enlistment %}
+                {{ latest_enlistment.semester }}
+              {% else %}
+                ---
+              {% endif %}
+            </div>
+          </div>
+          <div class="info-row">
+            <div class="label">Campus</div>
+            <div class="value">Urdaneta Campus</div>
+          </div>
+        </div>
+        <div class="info-box">
+          <div class="info-row">
+            <div class="label">College</div>
+            <div class="value">College of Information Technology Education</div>
+          </div>
+          <div class="info-row">
+            <div class="label">Session</div>
+            <div class="value">
+              {% if latest_enlistment %}
+                {{ latest_enlistment.school_year }} - {{ latest_enlistment.semester }}
+              {% else %}
+                ---
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-subtitle">Note</div>
+      <div class="note-box">
+        <ul>
+          <li>Kindly complete one time student profile to proceed for down-payment.</li>
+          <li>If in case of outstanding balance, please clear it first or you may apply for promissory note.</li>
+          <li>In step 1, verify all the details.</li>
+          <li>In step 2, click on pay button to put your payment request. In case of cash payments, you need to visit University Counter to pay the amount in cash.</li>
+          <li>In step 3, you can verify your registration status.</li>
+        </ul>
+      </div>
+
+      <div class="section-subtitle">Fees Details</div>
+      <table class="fees-table">
+        <thead>
+          <tr>
+            <th>Payment Type</th>
+            <th class="amount">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>DOWN PAYMENT AMOUNT</td>
+            <td class="amount">0.00</td>
+          </tr>
+          <tr>
+            <td>Prelim (1st Term)</td>
+            <td class="amount">
+              {% if latest_enlistment and latest_enlistment.payment %}
+                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
+              {% else %}
+                0.00
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td>Midterm (2nd Term)</td>
+            <td class="amount">
+              {% if latest_enlistment and latest_enlistment.payment %}
+                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
+              {% else %}
+                0.00
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td>Final (3rd Term)</td>
+            <td class="amount">
+              {% if latest_enlistment and latest_enlistment.payment %}
+                {% widthratio latest_enlistment.payment.amount 3 1 %}.00
+              {% else %}
+                0.00
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight:700;">Total Amount</td>
+            <td class="amount" style="font-weight:700;">
+              {% if latest_enlistment and latest_enlistment.payment %}
+                {{ latest_enlistment.payment.amount }}
+              {% else %}
+                0.00
+              {% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="pay-row">
+        <div class="pay-card">
+          <h4>Pay In Cash</h4>
+          <div class="amount-box">
+            <span>Amount :</span>
+            <span>0.00</span>
+          </div>
+        </div>
+        <div class="pay-card">
+          <h4>Pay Online</h4>
+          <div class="amount-box">
+            <span>Amount :</span>
+            <span>0.00</span>
+          </div>
+          <div class="pay-action">
+            <button class="btn" type="button">Pay Online</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="verify-note">Dear Candidate, Your payment is verified.</p>
+
+      <div class="section-subtitle">Previous Receipts Information</div>
+      <table class="receipts-table">
+        <thead>
+          <tr>
+            <th>Print</th>
+            <th>Registration No</th>
+            <th>Receipt Type</th>
+            <th>Receipt No</th>
+            <th>Date</th>
+            <th>Semester</th>
+            <th>Session</th>
+            <th>Pay Type</th>
+            <th>Total Amount</th>
+            <th>Paid Amount</th>
+            <th>Balance</th>
+            <th>Payment Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>--</td>
+            <td>{{ user.student_number|default:"--" }}</td>
+            <td>DP</td>
+            <td>--</td>
+            <td>--</td>
+            <td>
+              {% if latest_enlistment %}
+                {{ latest_enlistment.semester }}
+              {% else %}
+                ---
+              {% endif %}
+            </td>
+            <td>
+              {% if latest_enlistment %}
+                {{ latest_enlistment.school_year }} - {{ latest_enlistment.semester }}
+              {% else %}
+                ---
+              {% endif %}
+            </td>
+            <td>OFFLINE</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td>0.00</td>
+            <td class="status-complete">COMPLETE</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </section>
 </div>

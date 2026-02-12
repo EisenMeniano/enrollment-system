@@ -11,6 +11,14 @@
   <p>Enter paid amount and optional reference to confirm enrollment.</p>
   <form method="post">
     {% csrf_token %}
+    <p>
+      <label for="max_downpayment_term"><strong>Maximum Downpayment Term</strong></label>
+      <select id="max_downpayment_term" name="max_downpayment_term">
+        <option value="PRELIM">Prelim</option>
+        <option value="MIDTERM">Midterm</option>
+        <option value="FINAL">Final</option>
+      </select>
+    </p>
     {{ form.as_p }}
     <button class="btn" type="submit">Record Payment</button>
     <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>

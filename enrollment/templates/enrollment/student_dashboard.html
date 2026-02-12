@@ -77,7 +77,7 @@
             <td data-label="Actions">
               <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">View</a>
               {% if e.status == "APPROVED_FOR_PAYMENT" %}
-                <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Payment</a>
+                <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Student Payment</a>
               {% endif %}
             </td>
           </tr>
@@ -94,8 +94,8 @@
     </div>
 
     <div class="section-card" id="finance-flow">
-      <h3 class="section-title">Admin/Finance Account Flow</h3>
-      <p class="subtle">Finance-only flow based on the diagram.</p>
+      <h3 class="section-title">Student Payment Flow</h3>
+      <p class="subtle">Payment is made to the student account, not the finance department.</p>
       <style>
         .finance-only {
           margin-top: 12px;
@@ -168,7 +168,7 @@
         }
       </style>
       <div class="finance-only">
-        <div class="fo-node gray">Admin/Finance Account</div>
+        <div class="fo-node gray">Student Account</div>
         <div class="fo-arrow">|</div>
         <div class="fo-node gray">Check Student Balance</div>
         <div class="fo-arrow">|</div>
@@ -197,12 +197,12 @@
           </div>
           <div class="fo-branch-col">
             <div class="fo-label">Yes</div>
-            <div class="fo-node gray">Proceed to Payment</div>
-            <div class="fo-node fo-diamond"><span>Payment Successful?</span></div>
+            <div class="fo-node gray">Proceed to Student Payment</div>
+            <div class="fo-node fo-diamond"><span>Payment Sent to Student?</span></div>
             <div class="fo-branch" style="grid-template-columns: 1fr 1fr; max-width: 360px;">
               <div class="fo-branch-col">
                 <div class="fo-label">No</div>
-                <div class="fo-node gray">Retry Payment</div>
+                <div class="fo-node gray">Retry Student Payment</div>
               </div>
               <div class="fo-branch-col">
                 <div class="fo-label">Yes</div>

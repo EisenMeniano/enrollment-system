@@ -7,7 +7,143 @@
     {% include "enrollment/_student_topinfo.html" %}
     <div class="section-card">
       <h3 class="section-title">INC Completion Apply</h3>
-      <p class="subtle">INC completion application form will appear here.</p>
+      <style>
+        .inc-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 18px 30px;
+          margin-bottom: 16px;
+        }
+        .inc-row {
+          display: grid;
+          grid-template-columns: 160px 1fr;
+          gap: 12px;
+          align-items: center;
+          padding: 6px 0;
+        }
+        .inc-label {
+          color: #546e7a;
+          font-weight: 700;
+        }
+        .inc-value {
+          color: #1e88e5;
+          font-weight: 700;
+          text-align: right;
+        }
+        .inc-form {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 18px 30px;
+          margin-top: 6px;
+        }
+        .inc-field label {
+          display: block;
+          font-weight: 700;
+          color: #37474f;
+          margin-bottom: 6px;
+        }
+        .inc-field label .req {
+          color: #d32f2f;
+          margin-right: 4px;
+        }
+        .inc-field select,
+        .inc-field input {
+          width: 100%;
+          border: 1px solid #cfd8dc;
+          border-radius: 6px;
+          padding: 8px 10px;
+          background: #fff;
+        }
+        .inc-date-box {
+          border: 1px solid #cfd8dc;
+          border-radius: 6px;
+          padding: 10px 12px;
+          background: #fff;
+        }
+        .inc-date-box .inc-date-label {
+          color: #546e7a;
+          font-weight: 700;
+          margin-bottom: 6px;
+        }
+        .inc-date-box .inc-date-value {
+          color: #90a4ae;
+        }
+        @media (max-width: 900px) {
+          .inc-grid,
+          .inc-form {
+            grid-template-columns: 1fr;
+          }
+          .inc-row {
+            grid-template-columns: 1fr;
+          }
+          .inc-value {
+            text-align: left;
+          }
+        }
+      </style>
+
+      <div class="inc-grid">
+        <div>
+          <div class="inc-row">
+            <div class="inc-label">Student ID</div>
+            <div class="inc-value">{{ user.student_number|default:"--" }}</div>
+          </div>
+          <div class="inc-row">
+            <div class="inc-label">Student Name</div>
+            <div class="inc-value">{{ user.last_name|default:"--" }}, {{ user.first_name|default:"--" }}</div>
+          </div>
+          <div class="inc-row">
+            <div class="inc-label">Campus</div>
+            <div class="inc-value">Urdaneta Campus</div>
+          </div>
+          <div class="inc-row">
+            <div class="inc-label">College</div>
+            <div class="inc-value">College of Information Technology Education</div>
+          </div>
+        </div>
+        <div>
+          <div class="inc-row">
+            <div class="inc-label">Course</div>
+            <div class="inc-value">{{ profile.program|default:"--" }}</div>
+          </div>
+          <div class="inc-row">
+            <div class="inc-label">Curriculum</div>
+            <div class="inc-value">CITE - {{ profile.program|default:"--" }}</div>
+          </div>
+          <div class="inc-row">
+            <div class="inc-label">Semester</div>
+            <div class="inc-value">
+              {% if latest_enlistment %}
+                {{ latest_enlistment.semester }}
+              {% else %}
+                --
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inc-form">
+        <div class="inc-field">
+          <label><span class="req">*</span>Academic Session</label>
+          <select>
+            <option>Please Select</option>
+            <option>SY 26-27 SEM I</option>
+            <option>Summer 2026</option>
+            <option>SY 25-26 SEM II</option>
+            <option>SY 25-26 SEM I</option>
+            {% if latest_enlistment %}
+              <option>{{ latest_enlistment.school_year }} - {{ latest_enlistment.semester }}</option>
+            {% endif %}
+          </select>
+        </div>
+        <div class="inc-field">
+          <div class="inc-date-box">
+            <div class="inc-date-label">INC Start Date</div>
+            <div class="inc-date-value">INC END Date</div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </div>
