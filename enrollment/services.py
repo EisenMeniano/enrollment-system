@@ -217,35 +217,43 @@ def finance_record_payment(user, enlistment, amount, reference=""):
         raise ValidationError("Payment can be recorded only when enlistment is approved for payment.")
 
     payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
+    if amount <= 0:
+        raise ValidationError("Payment amount must be greater than 0.")
+
     expected_due = payment.amount if payment.amount and payment.amount > 0 else amount
-    if amount < expected_due:
-        raise ValidationError(f"Payment amount cannot be less than the amount due ({expected_due}).")
     if payment.amount == 0:
         payment.amount = expected_due
-    payment.status = Payment.Status.SUCCESS
+    payment.status = Payment.Status.SUCCESS if amount >= expected_due else Payment.Status.PENDING
     payment.reference = reference
     payment.save(update_fields=["amount", "status", "reference"])
 
-    overpayment = amount - expected_due
-    if overpayment > 0:
-        acct, _ = StudentFinanceAccount.objects.get_or_create(student=enlistment.student, defaults={"balance": 0})
-        acct.balance = acct.balance - overpayment
-        acct.save(update_fields=["balance"])
+    acct, _ = StudentFinanceAccount.objects.get_or_create(student=enlistment.student, defaults={"balance": 0})
+    acct.balance = acct.balance - amount
+    acct.save(update_fields=["balance"])
 
-    enlistment.status = Enlistment.Status.ENROLLED
-    enlistment.save(update_fields=["status", "updated_at"])
+    overpayment = amount - expected_due if amount > expected_due else 0
+
+    fully_paid = amount >= expected_due
+    if fully_paid:
+        enlistment.status = Enlistment.Status.ENROLLED
+        enlistment.save(update_fields=["status", "updated_at"])
     log_history(
         actor=user,
         enlistment=enlistment,
         action=HistoryLog.Action.PAYMENT_RECORDED,
-        message=f"Payment recorded by finance. Ref: {reference}" if reference else "Payment recorded by finance.",
+        message=(
+            f"Payment recorded by finance: {amount}. Ref: {reference}"
+            if reference
+            else f"Payment recorded by finance: {amount}."
+        ),
     )
-    log_history(
-        actor=user,
-        enlistment=enlistment,
-        action=HistoryLog.Action.ENROLLED,
-        message="Enrollment confirmed by finance.",
-    )
-    return enlistment
+    if fully_paid:
+        log_history(
+            actor=user,
+            enlistment=enlistment,
+            action=HistoryLog.Action.ENROLLED,
+            message="Enrollment confirmed by finance.",
+        )
+    return enlistment, fully_paid, overpayment
 
 

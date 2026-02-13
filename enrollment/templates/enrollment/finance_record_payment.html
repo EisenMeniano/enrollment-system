@@ -8,7 +8,7 @@
   {% if payment %}
     <p><strong>Amount Due:</strong> {{ payment.amount }}</p>
   {% endif %}
-  <p>Enter paid amount and optional reference to confirm enrollment.</p>
+  <p>Enter paid amount and optional reference. You can record a downpayment (for example, 9000); it will be auto-deducted from midterm and final dues.</p>
   <form method="post">
     {% csrf_token %}
     <p>

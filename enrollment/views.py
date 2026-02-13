@@ -728,13 +728,21 @@ def finance_record_payment_view(request, pk):
         form = PaymentForm(request.POST)
         if form.is_valid():
             try:
-                finance_record_payment(
+                _, fully_paid, overpayment = finance_record_payment(
                     request.user,
                     enlistment,
                     amount=form.cleaned_data["amount"],
                     reference=form.cleaned_data.get("reference", ""),
                 )
-                messages.success(request, "Payment recorded. Enrollment confirmed.")
+                if fully_paid:
+                    messages.success(request, "Payment recorded. Enrollment confirmed.")
+                else:
+                    messages.success(
+                        request,
+                        "Downpayment recorded. Amount will be auto-deducted from upcoming midterm/final dues.",
+                    )
+                if overpayment > 0:
+                    messages.info(request, f"Overpayment credit posted: {overpayment}.")
                 return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
             except Exception as e:
                 messages.error(request, str(e))
