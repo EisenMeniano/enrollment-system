@@ -240,6 +240,14 @@
             <td>Final (3rd Term)</td>
             <td class="amount">{{ payment_breakdown.final|floatformat:2 }}</td>
           </tr>
+          <tr data-fee="installment">
+            <td>Overpayment Credit Applied (2nd/3rd Term)</td>
+            <td class="amount">-{{ payment_breakdown.overpayment_credit|floatformat:2 }}</td>
+          </tr>
+          <tr data-fee="installment">
+            <td>Remaining Credit After Final</td>
+            <td class="amount">{{ payment_breakdown.remaining_credit|floatformat:2 }}</td>
+          </tr>
           <tr data-fee="full">
             <td>FULL PAYMENT</td>
             <td class="amount">{{ payment_breakdown.total|floatformat:2 }}</td>

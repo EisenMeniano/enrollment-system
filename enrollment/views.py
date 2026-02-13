@@ -273,21 +273,36 @@ def _student_profile_placeholder(request, active, title):
     )
 
 
-def _build_payment_breakdown(enlistment):
+def _build_payment_breakdown(enlistment, credit=None):
     zero = Decimal("0.00")
     total = zero
+    credit = credit if credit is not None else zero
     if enlistment and getattr(enlistment, "payment", None):
         total = enlistment.payment.amount or zero
+    if credit < zero:
+        credit = zero
+    credit = credit.quantize(Decimal("0.01"))
+
     base_term = (total / Decimal("3")).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
     prelim = base_term
     midterm = base_term
     final = (total - prelim - midterm).quantize(Decimal("0.01"))
+
+    midterm_due = max(midterm - credit, zero)
+    remaining_credit = max(credit - midterm, zero)
+    final_due = max(final - remaining_credit, zero)
+    remaining_credit = max(remaining_credit - final, zero)
+
     return {
         "total": total,
         "down_payment": prelim,
         "prelim": prelim,
-        "midterm": midterm,
-        "final": final,
+        "midterm": midterm_due,
+        "final": final_due,
+        "base_midterm": midterm,
+        "base_final": final,
+        "overpayment_credit": credit,
+        "remaining_credit": remaining_credit,
     }
 
 @login_required
@@ -496,7 +511,11 @@ def student_downpayment(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     menu_items = StudentProfileMenuItem.get_menu()
-    payment_breakdown = _build_payment_breakdown(latest_enlistment)
+    finance_account = getattr(request.user, "finance_account", None)
+    carry_over_credit = Decimal("0.00")
+    if finance_account and finance_account.balance < 0:
+        carry_over_credit = abs(finance_account.balance)
+    payment_breakdown = _build_payment_breakdown(latest_enlistment, credit=carry_over_credit)
     return render(
         request,
         "enrollment/student_downpayment.html",
@@ -534,7 +553,11 @@ def student_my_payment(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     menu_items = StudentProfileMenuItem.get_menu()
-    payment_breakdown = _build_payment_breakdown(latest_enlistment)
+    finance_account = getattr(request.user, "finance_account", None)
+    carry_over_credit = Decimal("0.00")
+    if finance_account and finance_account.balance < 0:
+        carry_over_credit = abs(finance_account.balance)
+    payment_breakdown = _build_payment_breakdown(latest_enlistment, credit=carry_over_credit)
     return render(
         request,
         "enrollment/student_my_payment.html",

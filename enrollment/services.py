@@ -1,6 +1,6 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from .models import Enlistment, Payment, EnlistmentSubject, Subject, HistoryLog
+from .models import Enlistment, Payment, EnlistmentSubject, Subject, HistoryLog, StudentFinanceAccount
 
 def log_history(actor, enlistment, action, message=""):
     HistoryLog.objects.create(
@@ -165,13 +165,20 @@ def student_mark_paid(student, enlistment, amount, reference=""):
         raise ValidationError("Enlistment is not approved for payment.")
 
     payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
-    if payment.amount and payment.amount > 0 and amount != payment.amount:
-        raise ValidationError(f"Payment amount must match the amount due ({payment.amount}).")
+    expected_due = payment.amount if payment.amount and payment.amount > 0 else amount
+    if amount < expected_due:
+        raise ValidationError(f"Payment amount cannot be less than the amount due ({expected_due}).")
     if payment.amount == 0:
-        payment.amount = amount
+        payment.amount = expected_due
     payment.status = Payment.Status.SUCCESS
     payment.reference = reference
     payment.save(update_fields=["amount", "status", "reference"])
+
+    overpayment = amount - expected_due
+    if overpayment > 0:
+        acct, _ = StudentFinanceAccount.objects.get_or_create(student=student, defaults={"balance": 0})
+        acct.balance = acct.balance - overpayment
+        acct.save(update_fields=["balance"])
 
     enlistment.status = Enlistment.Status.ENROLLED
     enlistment.save(update_fields=["status", "updated_at"])
@@ -210,13 +217,20 @@ def finance_record_payment(user, enlistment, amount, reference=""):
         raise ValidationError("Payment can be recorded only when enlistment is approved for payment.")
 
     payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
-    if payment.amount and payment.amount > 0 and amount != payment.amount:
-        raise ValidationError(f"Payment amount must match the amount due ({payment.amount}).")
+    expected_due = payment.amount if payment.amount and payment.amount > 0 else amount
+    if amount < expected_due:
+        raise ValidationError(f"Payment amount cannot be less than the amount due ({expected_due}).")
     if payment.amount == 0:
-        payment.amount = amount
+        payment.amount = expected_due
     payment.status = Payment.Status.SUCCESS
     payment.reference = reference
     payment.save(update_fields=["amount", "status", "reference"])
+
+    overpayment = amount - expected_due
+    if overpayment > 0:
+        acct, _ = StudentFinanceAccount.objects.get_or_create(student=enlistment.student, defaults={"balance": 0})
+        acct.balance = acct.balance - overpayment
+        acct.save(update_fields=["balance"])
 
     enlistment.status = Enlistment.Status.ENROLLED
     enlistment.save(update_fields=["status", "updated_at"])
