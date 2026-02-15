@@ -27,6 +27,30 @@
 </div>
 
 <div class="card" style="margin-top:14px;">
+  <h3>Pending Student Payment Approval</h3>
+  <table>
+    <thead><tr><th>ID</th><th>Student</th><th>Term</th><th>Submitted Amount</th><th>Reference</th><th></th></tr></thead>
+    <tbody>
+      {% for e in pending_payment_approval %}
+      <tr>
+        <td data-label="ID">#{{ e.id }}</td>
+        <td data-label="Student">{{ e.student.student_number }}</td>
+        <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
+        <td data-label="Submitted Amount">{{ e.payment.submitted_amount }}</td>
+        <td data-label="Reference">{{ e.payment.reference|default:"-" }}</td>
+        <td data-label="Actions">
+          <a class="btn" href="{% url 'enrollment:finance_record_payment' e.id %}">Approve</a>
+          <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">None.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card" style="margin-top:14px;">
   <h3>Pending Finance Review</h3>
   <table>
     <thead><tr><th>ID</th><th>Student</th><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th></th></tr></thead>
@@ -94,7 +118,7 @@
         </td>
         <td data-label="Actions">
           <a class="btn gray" href="{% url 'enrollment:finance_set_amount' e.id %}">Set Amount</a>
-          <a class="btn" href="{% url 'enrollment:finance_record_payment' e.id %}">Enter Payment</a>
+          <a class="btn" href="{% url 'enrollment:finance_record_payment' e.id %}">Approve Payment</a>
           <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">Open</a>
         </td>
       </tr>

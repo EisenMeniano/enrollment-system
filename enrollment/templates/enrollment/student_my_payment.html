@@ -150,6 +150,10 @@
           padding: 6px 14px;
           border-radius: 999px;
         }
+        .pay-card .pay-action .btn.disabled {
+          pointer-events: none;
+          opacity: 0.6;
+        }
         .pay-online {
           display: inline-block;
           border: 1px solid #29b6f6;
@@ -199,14 +203,12 @@
           </select>
         </div>
         <div class="pay-field">
-          <label><span class="req">*</span>Semester</label>
+          <label><span class="req">*</span>Term</label>
           <select id="paymentSemester">
-            {% if latest_enlistment %}
-              <option value="">---</option>
-              <option>{{ latest_enlistment.school_year }} - {{ latest_enlistment.semester }}</option>
-            {% else %}
-              <option value="">---</option>
-            {% endif %}
+            <option value="">Please Select</option>
+            <option value="PRELIM">Prelim (1st Term)</option>
+            <option value="MIDTERM">Midterm (2nd Term)</option>
+            <option value="FINAL">Final (3rd Term)</option>
           </select>
         </div>
         <div class="pay-actions">
@@ -241,8 +243,8 @@
             <td class="amount">{{ payment_breakdown.final|floatformat:2 }}</td>
           </tr>
           <tr data-fee="installment">
-            <td>Overpayment Credit Applied (2nd/3rd Term)</td>
-            <td class="amount">-{{ payment_breakdown.overpayment_credit|floatformat:2 }}</td>
+            <td>Remaining Balance After Down Payment</td>
+            <td class="amount">{{ payment_breakdown.remaining_after_downpayment|floatformat:2 }}</td>
           </tr>
           <tr data-fee="installment">
             <td>Remaining Credit After Final</td>
@@ -259,25 +261,37 @@
         </tbody>
       </table>
 
-      <div class="pay-row">
+      <div
+        class="pay-row"
+        id="paymentActions"
+        data-total="{{ payment_breakdown.total|floatformat:2 }}"
+        data-prelim="{{ payment_breakdown.prelim|floatformat:2 }}"
+        data-midterm="{{ payment_breakdown.midterm|floatformat:2 }}"
+        data-final="{{ payment_breakdown.final|floatformat:2 }}"
+        data-pay-url="{% if latest_enlistment %}{% url 'enrollment:student_pay' latest_enlistment.id %}{% endif %}"
+      >
         <div class="pay-card">
           <h4>Pay In Cash</h4>
           <div class="amount-box">
             <span>Amount :</span>
-            <span class="amount-value">0.00</span>
+            <span class="amount-value" id="cashAmount">0.00</span>
+          </div>
+          <div class="pay-action">
+            <a class="btn disabled" id="btnPayCash" href="#" aria-disabled="true">Pay In Cash</a>
           </div>
         </div>
         <div class="pay-card">
           <h4>Pay Online</h4>
           <div class="amount-box">
             <span>Amount :</span>
-            <span class="amount-value">0.00</span>
+            <span class="amount-value" id="onlineAmount">0.00</span>
           </div>
           <div class="pay-action">
-            <button class="btn" type="button">Pay Online</button>
+            <a class="btn disabled" id="btnPayOnline" href="#" aria-disabled="true">Pay Online</a>
           </div>
         </div>
       </div>
+      <p class="subtle" id="paymentActionNote">Select payment type and term, then click Show to enable payment actions.</p>
 
       <p class="verify-note">Dear {{ user.first_name|default:"Student" }} {{ user.last_name|default:"" }}, Your payment is verified.</p>
 
@@ -332,6 +346,23 @@
     var typeSelect = document.getElementById("paymentType");
     var semesterSelect = document.getElementById("paymentSemester");
     var feeRows = document.querySelectorAll("[data-fee]");
+    var paymentActions = document.getElementById("paymentActions");
+    var payUrl = paymentActions.getAttribute("data-pay-url");
+    var cashAmountEl = document.getElementById("cashAmount");
+    var onlineAmountEl = document.getElementById("onlineAmount");
+    var payCashBtn = document.getElementById("btnPayCash");
+    var payOnlineBtn = document.getElementById("btnPayOnline");
+    var paymentActionNote = document.getElementById("paymentActionNote");
+    var amounts = {
+      total: parseFloat(paymentActions.getAttribute("data-total") || "0"),
+      prelim: parseFloat(paymentActions.getAttribute("data-prelim") || "0"),
+      midterm: parseFloat(paymentActions.getAttribute("data-midterm") || "0"),
+      final: parseFloat(paymentActions.getAttribute("data-final") || "0")
+    };
+
+    function formatAmount(value) {
+      return Number(value || 0).toFixed(2);
+    }
 
     function setFeeVisibility(mode) {
       feeRows.forEach(function (row) {
@@ -344,9 +375,62 @@
       });
     }
 
+    function getSelectedAmount() {
+      if (typeSelect.value === "FULL") {
+        return amounts.total;
+      }
+      if (semesterSelect.value === "PRELIM") {
+        return amounts.prelim;
+      }
+      if (semesterSelect.value === "MIDTERM") {
+        return amounts.midterm;
+      }
+      if (semesterSelect.value === "FINAL") {
+        return amounts.final;
+      }
+      return null;
+    }
+
+    function setActionState(enabled, amount, term) {
+      cashAmountEl.textContent = formatAmount(amount);
+      onlineAmountEl.textContent = formatAmount(amount);
+      if (!enabled) {
+        payCashBtn.classList.add("disabled");
+        payOnlineBtn.classList.add("disabled");
+        payCashBtn.setAttribute("aria-disabled", "true");
+        payOnlineBtn.setAttribute("aria-disabled", "true");
+        payCashBtn.href = "#";
+        payOnlineBtn.href = "#";
+        return;
+      }
+
+      var referenceSuffix = typeSelect.value === "FULL" ? "FULL" : ("INSTALLMENT-" + term);
+      payCashBtn.classList.remove("disabled");
+      payOnlineBtn.classList.remove("disabled");
+      payCashBtn.setAttribute("aria-disabled", "false");
+      payOnlineBtn.setAttribute("aria-disabled", "false");
+      payCashBtn.href = payUrl + "?amount=" + encodeURIComponent(formatAmount(amount)) + "&reference=" + encodeURIComponent("CASH-" + referenceSuffix);
+      payOnlineBtn.href = payUrl + "?amount=" + encodeURIComponent(formatAmount(amount)) + "&reference=" + encodeURIComponent("ONLINE-" + referenceSuffix);
+    }
+
     function showResults() {
-      if (typeSelect.value && semesterSelect.value) {
-        setFeeVisibility(typeSelect.value === "FULL" ? "full" : "installment");
+      if (!typeSelect.value) {
+        return;
+      }
+      if (typeSelect.value === "INSTALLMENT" && !semesterSelect.value) {
+        return;
+      }
+      var amount = getSelectedAmount();
+      var hasPayFlow = !!payUrl;
+      var canEnable = hasPayFlow && amount !== null && amount > 0;
+      setFeeVisibility(typeSelect.value === "FULL" ? "full" : "installment");
+      setActionState(canEnable, amount, semesterSelect.value);
+      if (!hasPayFlow) {
+        paymentActionNote.textContent = "No enlistment available for payment.";
+      } else if (!canEnable) {
+        paymentActionNote.textContent = "Selected amount is 0.00. Nothing to pay for this option.";
+      } else {
+        paymentActionNote.textContent = "Payment actions are enabled. Choose cash or online to continue.";
       }
     }
 
@@ -354,10 +438,15 @@
       typeSelect.value = "";
       semesterSelect.value = "";
       setFeeVisibility(null);
+      setActionState(false, 0, "");
+      paymentActionNote.textContent = "Select payment type and term, then click Show to enable payment actions.";
     }
 
+    clearResults();
     showBtn.addEventListener("click", showResults);
     clearBtn.addEventListener("click", clearResults);
+    typeSelect.addEventListener("change", showResults);
+    semesterSelect.addEventListener("change", showResults);
   })();
 </script>
 {% endblock %}

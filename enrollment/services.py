@@ -165,34 +165,24 @@ def student_mark_paid(student, enlistment, amount, reference=""):
         raise ValidationError("Enlistment is not approved for payment.")
 
     payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
-    expected_due = payment.amount if payment.amount and payment.amount > 0 else amount
-    if amount < expected_due:
-        raise ValidationError(f"Payment amount cannot be less than the amount due ({expected_due}).")
+    if amount <= 0:
+        raise ValidationError("Payment amount must be greater than 0.")
     if payment.amount == 0:
-        payment.amount = expected_due
-    payment.status = Payment.Status.SUCCESS
+        payment.amount = amount
+    payment.submitted_amount = amount
+    payment.status = Payment.Status.SUBMITTED
     payment.reference = reference
-    payment.save(update_fields=["amount", "status", "reference"])
+    payment.save(update_fields=["amount", "submitted_amount", "status", "reference"])
 
-    overpayment = amount - expected_due
-    if overpayment > 0:
-        acct, _ = StudentFinanceAccount.objects.get_or_create(student=student, defaults={"balance": 0})
-        acct.balance = acct.balance - overpayment
-        acct.save(update_fields=["balance"])
-
-    enlistment.status = Enlistment.Status.ENROLLED
-    enlistment.save(update_fields=["status", "updated_at"])
     log_history(
         actor=student,
         enlistment=enlistment,
         action=HistoryLog.Action.PAYMENT_RECORDED,
-        message=f"Payment recorded. Ref: {reference}" if reference else "Payment recorded.",
-    )
-    log_history(
-        actor=student,
-        enlistment=enlistment,
-        action=HistoryLog.Action.ENROLLED,
-        message="Enrollment confirmed.",
+        message=(
+            f"Payment submitted for finance approval: {amount}. Ref: {reference}"
+            if reference
+            else f"Payment submitted for finance approval: {amount}."
+        ),
     )
     return enlistment
 
@@ -223,15 +213,23 @@ def finance_record_payment(user, enlistment, amount, reference=""):
     expected_due = payment.amount if payment.amount and payment.amount > 0 else amount
     if payment.amount == 0:
         payment.amount = expected_due
+    payment.submitted_amount = amount
     payment.status = Payment.Status.SUCCESS if amount >= expected_due else Payment.Status.PENDING
     payment.reference = reference
-    payment.save(update_fields=["amount", "status", "reference"])
+    payment.save(update_fields=["amount", "submitted_amount", "status", "reference"])
 
-    acct, _ = StudentFinanceAccount.objects.get_or_create(student=enlistment.student, defaults={"balance": 0})
-    acct.balance = acct.balance - amount
-    acct.save(update_fields=["balance"])
-
+    credit_to_post = 0
+    if amount < expected_due:
+        # Downpayment becomes available credit for upcoming term dues.
+        credit_to_post = amount
+    elif amount > expected_due:
+        # Only the excess beyond due is credit.
+        credit_to_post = amount - expected_due
     overpayment = amount - expected_due if amount > expected_due else 0
+    if credit_to_post > 0:
+        acct, _ = StudentFinanceAccount.objects.get_or_create(student=enlistment.student, defaults={"balance": 0})
+        acct.balance = acct.balance - credit_to_post
+        acct.save(update_fields=["balance"])
 
     fully_paid = amount >= expected_due
     if fully_paid:

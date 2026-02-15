@@ -7,11 +7,11 @@
   {% if payment %}
     <p><strong>Amount Due:</strong> {{ payment.amount }}</p>
   {% endif %}
-  <p>Enter your payment amount and optional reference. This marks the enlistment as <strong>ENROLLED</strong>.</p>
+  <p>Enter your payment amount and optional reference. Finance will review and approve this payment.</p>
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button class="btn" type="submit">Mark as Paid</button>
+    <button class="btn" type="submit">Submit Payment</button>
     <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>
   </form>
 </div>

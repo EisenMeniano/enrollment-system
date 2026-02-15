@@ -8,6 +8,7 @@ from accounts.models import User, StudentProfile
 from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm, PhotoSignatureForm
 from .models import (
     Enlistment,
+    Payment,
     HistoryLog,
     EnlistmentSubject,
     Subject,
@@ -102,6 +103,8 @@ def enlistment_detail(request, pk):
 def student_pay(request, pk):
     enlistment = get_object_or_404(Enlistment, pk=pk, student=request.user)
     payment = getattr(enlistment, "payment", None)
+    prefill_amount = request.GET.get("amount")
+    prefill_reference = request.GET.get("reference", "")
     if request.method == "POST":
         form = PaymentForm(request.POST)
         if form.is_valid():
@@ -112,12 +115,19 @@ def student_pay(request, pk):
                     amount=form.cleaned_data["amount"],
                     reference=form.cleaned_data.get("reference", ""),
                 )
-                messages.success(request, "Payment recorded. Enrollment confirmed.")
+                messages.success(request, "Payment submitted. Waiting for finance approval.")
                 return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
             except Exception as e:
                 messages.error(request, str(e))
     else:
-        form = PaymentForm(initial={"amount": payment.amount if payment else 0, "reference": payment.reference if payment else ""})
+        initial_amount = payment.amount if payment else 0
+        if prefill_amount:
+            try:
+                initial_amount = Decimal(str(prefill_amount))
+            except Exception:
+                pass
+        initial_reference = prefill_reference or (payment.reference if payment else "")
+        form = PaymentForm(initial={"amount": initial_amount, "reference": initial_reference})
     return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form, "payment": payment})
 
 @login_required
@@ -277,31 +287,34 @@ def _build_payment_breakdown(enlistment, credit=None):
     zero = Decimal("0.00")
     total = zero
     credit = credit if credit is not None else zero
+    submitted_down_payment = zero
     if enlistment and getattr(enlistment, "payment", None):
         total = enlistment.payment.amount or zero
+        submitted_down_payment = enlistment.payment.submitted_amount or zero
     if credit < zero:
         credit = zero
     credit = credit.quantize(Decimal("0.01"))
 
-    base_term = (total / Decimal("3")).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+    # Down payment is the initial payment for enlistment; terms split only the remaining balance.
+    if submitted_down_payment < zero:
+        submitted_down_payment = zero
+    down_payment = min(submitted_down_payment, total)
+    remaining_after_downpayment = max(total - down_payment, zero)
+
+    base_term = (remaining_after_downpayment / Decimal("3")).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
     prelim = base_term
     midterm = base_term
-    final = (total - prelim - midterm).quantize(Decimal("0.01"))
+    final = (remaining_after_downpayment - prelim - midterm).quantize(Decimal("0.01"))
 
-    midterm_due = max(midterm - credit, zero)
-    remaining_credit = max(credit - midterm, zero)
-    final_due = max(final - remaining_credit, zero)
-    remaining_credit = max(remaining_credit - final, zero)
+    remaining_credit = max(credit - down_payment, zero)
 
     return {
         "total": total,
-        "down_payment": prelim,
+        "down_payment": down_payment,
+        "remaining_after_downpayment": remaining_after_downpayment,
         "prelim": prelim,
-        "midterm": midterm_due,
-        "final": final_due,
-        "base_midterm": midterm,
-        "base_final": final,
-        "overpayment_credit": credit,
+        "midterm": midterm,
+        "final": final,
         "remaining_credit": remaining_credit,
     }
 
@@ -650,11 +663,18 @@ def finance_dashboard(request):
     pending = Enlistment.objects.filter(status=Enlistment.Status.FINANCE_REVIEW)
     holds = Enlistment.objects.filter(status__in=[Enlistment.Status.FINANCE_HOLD_BALANCE, Enlistment.Status.FINANCE_HOLD_ACADEMIC])
     approved_for_payment = Enlistment.objects.filter(status=Enlistment.Status.APPROVED_FOR_PAYMENT)
+    pending_payment_approval = approved_for_payment.filter(payment__status=Payment.Status.SUBMITTED)
     window = EnrollmentWindow.get_solo()
     return render(
         request,
         "enrollment/finance_dashboard.html",
-        {"pending": pending, "holds": holds, "approved_for_payment": approved_for_payment, "window": window},
+        {
+            "pending": pending,
+            "holds": holds,
+            "approved_for_payment": approved_for_payment,
+            "pending_payment_approval": pending_payment_approval,
+            "window": window,
+        },
     )
 
 @login_required
@@ -735,11 +755,11 @@ def finance_record_payment_view(request, pk):
                     reference=form.cleaned_data.get("reference", ""),
                 )
                 if fully_paid:
-                    messages.success(request, "Payment recorded. Enrollment confirmed.")
+                    messages.success(request, "Payment approved by finance. Enrollment confirmed.")
                 else:
                     messages.success(
                         request,
-                        "Downpayment recorded. Amount will be auto-deducted from upcoming midterm/final dues.",
+                        "Payment approved by finance as downpayment. Amount will be auto-deducted from upcoming midterm/final dues.",
                     )
                 if overpayment > 0:
                     messages.info(request, f"Overpayment credit posted: {overpayment}.")
@@ -747,7 +767,10 @@ def finance_record_payment_view(request, pk):
             except Exception as e:
                 messages.error(request, str(e))
     else:
-        form = PaymentForm(initial={"amount": payment.amount if payment else 0, "reference": payment.reference if payment else ""})
+        initial_amount = 0
+        if payment:
+            initial_amount = payment.submitted_amount if payment.submitted_amount > 0 else payment.amount
+        form = PaymentForm(initial={"amount": initial_amount, "reference": payment.reference if payment else ""})
     return render(
         request,
         "enrollment/finance_record_payment.html",

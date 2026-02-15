@@ -45,7 +45,7 @@
     {% endif %}
     {% if user.role == "FINANCE" and enlistment.status == "APPROVED_FOR_PAYMENT" %}
       <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
-      <a class="btn" href="{% url 'enrollment:finance_record_payment' enlistment.id %}">Enter Payment</a>
+      <a class="btn" href="{% url 'enrollment:finance_record_payment' enlistment.id %}">Approve Payment</a>
     {% endif %}
     {% if user.role == "FINANCE" and enlistment.status == "ENROLLED" %}
       <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>

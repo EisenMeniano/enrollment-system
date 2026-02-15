@@ -7,8 +7,12 @@
   <p><strong>Enlistment:</strong> #{{ enlistment.id }} ({{ enlistment.school_year }} - {{ enlistment.semester }})</p>
   {% if payment %}
     <p><strong>Amount Due:</strong> {{ payment.amount }}</p>
+    {% if payment.submitted_amount %}
+      <p><strong>Submitted by Student:</strong> {{ payment.submitted_amount }}</p>
+    {% endif %}
+    <p><strong>Payment Status:</strong> {{ payment.get_status_display }}</p>
   {% endif %}
-  <p>Enter paid amount and optional reference. You can record a downpayment (for example, 9000); it will be auto-deducted from midterm and final dues.</p>
+  <p>Review and approve student payment. You can approve a downpayment (for example, 9000); it will be auto-deducted from midterm and final dues.</p>
   <form method="post">
     {% csrf_token %}
     <p>
@@ -20,7 +24,7 @@
       </select>
     </p>
     {{ form.as_p }}
-    <button class="btn" type="submit">Record Payment</button>
+    <button class="btn" type="submit">Approve Payment</button>
     <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>
   </form>
 </div>

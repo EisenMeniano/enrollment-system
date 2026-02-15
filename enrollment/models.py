@@ -129,11 +129,13 @@ class EnlistmentSubject(models.Model):
 class Payment(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
+        SUBMITTED = "SUBMITTED", "Submitted for Finance Approval"
         SUCCESS = "SUCCESS", "Success"
         FAILED = "FAILED", "Failed"
 
     enlistment = models.OneToOneField(Enlistment, on_delete=models.CASCADE, related_name="payment")
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    submitted_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     reference = models.CharField(max_length=100, blank=True)
 
