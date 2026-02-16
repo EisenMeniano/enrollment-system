@@ -103,6 +103,9 @@ def enlistment_detail(request, pk):
 def student_pay(request, pk):
     enlistment = get_object_or_404(Enlistment, pk=pk, student=request.user)
     payment = getattr(enlistment, "payment", None)
+    payment_kind = (request.POST.get("payment_kind") or request.GET.get("fee_kind") or "TUITION").upper()
+    if payment_kind not in {"ENLISTMENT", "TUITION"}:
+        payment_kind = "TUITION"
     prefill_amount = request.GET.get("amount")
     prefill_reference = request.GET.get("reference", "")
     if request.method == "POST":
@@ -114,6 +117,7 @@ def student_pay(request, pk):
                     enlistment,
                     amount=form.cleaned_data["amount"],
                     reference=form.cleaned_data.get("reference", ""),
+                    payment_kind=payment_kind,
                 )
                 messages.success(request, "Payment submitted. Waiting for finance approval.")
                 return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
@@ -126,9 +130,24 @@ def student_pay(request, pk):
                 initial_amount = Decimal(str(prefill_amount))
             except Exception:
                 pass
+        elif payment:
+            initial_amount = payment.enlistment_amount if payment_kind == "ENLISTMENT" else payment.tuition_amount
         initial_reference = prefill_reference or (payment.reference if payment else "")
         form = PaymentForm(initial={"amount": initial_amount, "reference": initial_reference})
-    return render(request, "enrollment/student_pay.html", {"enlistment": enlistment, "form": form, "payment": payment})
+    due_amount = Decimal("0.00")
+    if payment:
+        due_amount = payment.enlistment_amount if payment_kind == "ENLISTMENT" else payment.tuition_amount
+    return render(
+        request,
+        "enrollment/student_pay.html",
+        {
+            "enlistment": enlistment,
+            "form": form,
+            "payment": payment,
+            "payment_kind": payment_kind,
+            "due_amount": due_amount,
+        },
+    )
 
 @login_required
 @role_required("STUDENT")
@@ -283,23 +302,23 @@ def _student_profile_placeholder(request, active, title):
     )
 
 
-def _build_payment_breakdown(enlistment, credit=None):
+def _build_payment_breakdown(enlistment, credit=None, include_downpayment=True):
     zero = Decimal("0.00")
     total = zero
     credit = credit if credit is not None else zero
-    submitted_down_payment = zero
     if enlistment and getattr(enlistment, "payment", None):
-        total = enlistment.payment.amount or zero
-        submitted_down_payment = enlistment.payment.submitted_amount or zero
+        total = enlistment.payment.tuition_amount or zero
     if credit < zero:
         credit = zero
     credit = credit.quantize(Decimal("0.01"))
 
-    # Down payment is the initial payment for enlistment; terms split only the remaining balance.
-    if submitted_down_payment < zero:
-        submitted_down_payment = zero
-    down_payment = min(submitted_down_payment, total)
-    remaining_after_downpayment = max(total - down_payment, zero)
+    if include_downpayment:
+        # Down payment is separate from tuition and handled on Down Payment page.
+        down_payment = enlistment.payment.enlistment_amount if enlistment and getattr(enlistment, "payment", None) else zero
+        remaining_after_downpayment = total
+    else:
+        down_payment = zero
+        remaining_after_downpayment = total
 
     base_term = (remaining_after_downpayment / Decimal("3")).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
     prelim = base_term
@@ -528,7 +547,30 @@ def student_downpayment(request):
     carry_over_credit = Decimal("0.00")
     if finance_account and finance_account.balance < 0:
         carry_over_credit = abs(finance_account.balance)
-    payment_breakdown = _build_payment_breakdown(latest_enlistment, credit=carry_over_credit)
+    payment_breakdown = _build_payment_breakdown(
+        latest_enlistment,
+        credit=carry_over_credit,
+        include_downpayment=True,
+    )
+    downpayment_open_statuses = {
+        Enlistment.Status.SUBMITTED,
+        Enlistment.Status.RETURNED,
+        Enlistment.Status.FINANCE_REVIEW,
+        Enlistment.Status.FINANCE_APPROVED,
+    }
+    downpayment_enabled = False
+    downpayment_message = ""
+    if not latest_enlistment:
+        downpayment_message = "No enlistment found yet. Submit enlistment first."
+    elif latest_enlistment.status not in downpayment_open_statuses:
+        downpayment_message = "Down payment is for enlistment only. Continue in My Payment for enrollment tuition."
+    elif latest_enlistment.payment.enlistment_paid if getattr(latest_enlistment, "payment", None) else False:
+        downpayment_message = "Enlistment fee is already paid."
+    elif payment_breakdown["down_payment"] <= 0:
+        downpayment_message = "No down payment amount is currently set for this enlistment."
+    else:
+        downpayment_enabled = True
+
     return render(
         request,
         "enrollment/student_downpayment.html",
@@ -537,6 +579,8 @@ def student_downpayment(request):
             "latest_enlistment": latest_enlistment,
             "menu_items": menu_items,
             "payment_breakdown": payment_breakdown,
+            "downpayment_enabled": downpayment_enabled,
+            "downpayment_message": downpayment_message,
         },
     )
 
@@ -570,7 +614,30 @@ def student_my_payment(request):
     carry_over_credit = Decimal("0.00")
     if finance_account and finance_account.balance < 0:
         carry_over_credit = abs(finance_account.balance)
-    payment_breakdown = _build_payment_breakdown(latest_enlistment, credit=carry_over_credit)
+    payment_breakdown = _build_payment_breakdown(
+        latest_enlistment,
+        credit=carry_over_credit,
+        include_downpayment=False,
+    )
+    my_payment_open_statuses = {
+        Enlistment.Status.APPROVED_FOR_PAYMENT,
+        Enlistment.Status.ENROLLED,
+    }
+    my_payment_enabled = False
+    my_payment_message = ""
+    if not latest_enlistment:
+        my_payment_message = "No enlistment found yet."
+    elif latest_enlistment.status not in my_payment_open_statuses:
+        my_payment_message = "My Payment opens only after adviser final approval and finance tuition setup."
+    elif not getattr(latest_enlistment, "payment", None) or not latest_enlistment.payment.enlistment_paid:
+        my_payment_message = "Pay and clear enlistment fee first before tuition payment."
+    elif payment_breakdown["total"] <= 0:
+        my_payment_message = "Waiting for finance to set your tuition amount."
+    elif payment_breakdown["remaining_after_downpayment"] <= 0:
+        my_payment_message = "No remaining enrollment balance to pay."
+    else:
+        my_payment_enabled = True
+
     return render(
         request,
         "enrollment/student_my_payment.html",
@@ -579,6 +646,8 @@ def student_my_payment(request):
             "latest_enlistment": latest_enlistment,
             "menu_items": menu_items,
             "payment_breakdown": payment_breakdown,
+            "my_payment_enabled": my_payment_enabled,
+            "my_payment_message": my_payment_message,
         },
     )
 
@@ -725,14 +794,24 @@ def finance_set_amount_view(request, pk):
         form = FinanceAmountForm(request.POST)
         if form.is_valid():
             try:
-                finance_set_amount(request.user, enlistment, form.cleaned_data["amount"])
+                finance_set_amount(
+                    request.user,
+                    enlistment,
+                    enlistment_amount=form.cleaned_data["enlistment_amount"],
+                    tuition_amount=form.cleaned_data["tuition_amount"],
+                )
                 messages.success(request, "Amount updated.")
                 return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
             except Exception as e:
                 messages.error(request, str(e))
     else:
         payment = getattr(enlistment, "payment", None)
-        form = FinanceAmountForm(initial={"amount": payment.amount if payment else 0})
+        form = FinanceAmountForm(
+            initial={
+                "enlistment_amount": payment.enlistment_amount if payment else 0,
+                "tuition_amount": payment.tuition_amount if payment else 0,
+            }
+        )
     return render(request, "enrollment/finance_set_amount.html", {"enlistment": enlistment, "form": form})
 
 @login_required
@@ -748,18 +827,20 @@ def finance_record_payment_view(request, pk):
         form = PaymentForm(request.POST)
         if form.is_valid():
             try:
-                _, fully_paid, overpayment = finance_record_payment(
+                _, fully_paid, overpayment, payment_kind = finance_record_payment(
                     request.user,
                     enlistment,
                     amount=form.cleaned_data["amount"],
                     reference=form.cleaned_data.get("reference", ""),
                 )
-                if fully_paid:
-                    messages.success(request, "Payment approved by finance. Enrollment confirmed.")
+                if payment_kind == "ENLISTMENT" and fully_paid:
+                    messages.success(request, "Enlistment fee fully paid. Tuition payment is now enabled.")
+                elif fully_paid:
+                    messages.success(request, "Tuition payment approved by finance. Enrollment confirmed.")
                 else:
                     messages.success(
                         request,
-                        "Payment approved by finance as downpayment. Amount will be auto-deducted from upcoming midterm/final dues.",
+                        "Payment approved by finance.",
                     )
                 if overpayment > 0:
                     messages.info(request, f"Overpayment credit posted: {overpayment}.")

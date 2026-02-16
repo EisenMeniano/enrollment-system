@@ -6,13 +6,16 @@
   <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
   <p><strong>Enlistment:</strong> #{{ enlistment.id }} ({{ enlistment.school_year }} - {{ enlistment.semester }})</p>
   {% if payment %}
-    <p><strong>Amount Due:</strong> {{ payment.amount }}</p>
+    <p><strong>Enlistment Fee Due:</strong> {{ payment.enlistment_amount }}</p>
+    <p><strong>Tuition Fee Due:</strong> {{ payment.tuition_amount }}</p>
+    <p><strong>Enlistment Fee Paid:</strong> {{ payment.enlistment_paid_amount }}</p>
+    <p><strong>Tuition Fee Paid:</strong> {{ payment.tuition_paid_amount }}</p>
     {% if payment.submitted_amount %}
       <p><strong>Submitted by Student:</strong> {{ payment.submitted_amount }}</p>
     {% endif %}
     <p><strong>Payment Status:</strong> {{ payment.get_status_display }}</p>
   {% endif %}
-  <p>Review and approve student payment. You can approve a downpayment (for example, 9000); it will be auto-deducted from midterm and final dues.</p>
+  <p>Review and approve student payment. Tuition payment should be approved only after enlistment fee is fully paid.</p>
   <form method="post">
     {% csrf_token %}
     <p>

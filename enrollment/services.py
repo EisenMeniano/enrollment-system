@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from .models import Enlistment, Payment, EnlistmentSubject, Subject, HistoryLog, StudentFinanceAccount
@@ -150,28 +151,58 @@ def adviser_final_approve_and_add_subjects(user, enlistment, subject_ids):
         message="Final approval complete. Subjects added.",
     )
 
-    # Create payment record (amount is placeholder; fees can be computed later)
-    Payment.objects.update_or_create(
+    # Initialize payment only when missing. Do not overwrite an amount already set by finance.
+    payment, created = Payment.objects.get_or_create(
         enlistment=enlistment,
-        defaults={"amount": 0, "status": Payment.Status.PENDING},
+        defaults={
+            "enlistment_amount": 0,
+            "tuition_amount": 0,
+            "amount": 0,
+            "status": Payment.Status.PENDING,
+        },
     )
+    if not created:
+        payment.status = Payment.Status.PENDING
+        payment.save(update_fields=["status"])
     return enlistment
 
 @transaction.atomic
-def student_mark_paid(student, enlistment, amount, reference=""):
+def student_mark_paid(student, enlistment, amount, reference="", payment_kind="TUITION"):
     if enlistment.student_id != student.id:
         raise PermissionDenied("Not your enlistment.")
     if enlistment.status != Enlistment.Status.APPROVED_FOR_PAYMENT:
         raise ValidationError("Enlistment is not approved for payment.")
 
-    payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
+    payment, _ = Payment.objects.get_or_create(
+        enlistment=enlistment,
+        defaults={
+            "enlistment_amount": 0,
+            "tuition_amount": 0,
+            "amount": 0,
+        },
+    )
     if amount <= 0:
         raise ValidationError("Payment amount must be greater than 0.")
-    if payment.amount == 0:
-        payment.amount = amount
+    payment_kind = (payment_kind or "TUITION").upper()
+    if payment_kind == "ENLISTMENT":
+        expected_due = payment.enlistment_amount
+        if expected_due <= 0:
+            raise ValidationError("Enlistment fee is not set by finance yet.")
+    else:
+        if not payment.enlistment_paid:
+            raise ValidationError("You can pay tuition only after enlistment fee is fully paid.")
+        expected_due = payment.tuition_amount
+        if expected_due <= 0:
+            raise ValidationError("Tuition fee is not set by finance yet.")
+        payment_kind = "TUITION"
+
+    if amount > expected_due:
+        raise ValidationError(f"Amount exceeds {payment_kind.lower()} fee due ({expected_due}).")
+
     payment.submitted_amount = amount
     payment.status = Payment.Status.SUBMITTED
     payment.reference = reference
+    payment.amount = payment.tuition_amount
     payment.save(update_fields=["amount", "submitted_amount", "status", "reference"])
 
     log_history(
@@ -179,60 +210,103 @@ def student_mark_paid(student, enlistment, amount, reference=""):
         enlistment=enlistment,
         action=HistoryLog.Action.PAYMENT_RECORDED,
         message=(
-            f"Payment submitted for finance approval: {amount}. Ref: {reference}"
+            f"{payment_kind.title()} payment submitted for finance approval: {amount}. Ref: {reference}"
             if reference
-            else f"Payment submitted for finance approval: {amount}."
+            else f"{payment_kind.title()} payment submitted for finance approval: {amount}."
         ),
     )
     return enlistment
 
 @transaction.atomic
-def finance_set_amount(user, enlistment, amount):
+def finance_set_amount(user, enlistment, enlistment_amount, tuition_amount):
     require_role(user, ["FINANCE"])
-    payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
-    payment.amount = amount
-    payment.save(update_fields=["amount"])
+    payment, _ = Payment.objects.get_or_create(
+        enlistment=enlistment,
+        defaults={
+            "enlistment_amount": 0,
+            "tuition_amount": 0,
+            "amount": 0,
+        },
+    )
+    payment.enlistment_amount = enlistment_amount
+    payment.tuition_amount = tuition_amount
+    payment.amount = tuition_amount
+    payment.save(update_fields=["enlistment_amount", "tuition_amount", "amount"])
     log_history(
         actor=user,
         enlistment=enlistment,
         action=HistoryLog.Action.AMOUNT_SET,
-        message=f"Set amount to {amount}.",
+        message=f"Set enlistment fee={enlistment_amount}, tuition fee={tuition_amount}.",
     )
     return payment
 
 @transaction.atomic
-def finance_record_payment(user, enlistment, amount, reference=""):
+def finance_record_payment(user, enlistment, amount, reference="", payment_kind=None):
     require_role(user, ["FINANCE"])
     if enlistment.status != Enlistment.Status.APPROVED_FOR_PAYMENT:
         raise ValidationError("Payment can be recorded only when enlistment is approved for payment.")
 
-    payment, _ = Payment.objects.get_or_create(enlistment=enlistment, defaults={"amount": 0})
+    payment, _ = Payment.objects.get_or_create(
+        enlistment=enlistment,
+        defaults={
+            "enlistment_amount": 0,
+            "tuition_amount": 0,
+            "amount": 0,
+        },
+    )
     if amount <= 0:
         raise ValidationError("Payment amount must be greater than 0.")
 
-    expected_due = payment.amount if payment.amount and payment.amount > 0 else amount
-    if payment.amount == 0:
-        payment.amount = expected_due
-    payment.submitted_amount = amount
-    payment.status = Payment.Status.SUCCESS if amount >= expected_due else Payment.Status.PENDING
-    payment.reference = reference
-    payment.save(update_fields=["amount", "submitted_amount", "status", "reference"])
+    kind = (payment_kind or "").upper()
+    if kind not in {"ENLISTMENT", "TUITION"}:
+        ref_upper = (reference or "").upper()
+        kind = "ENLISTMENT" if "DOWNPAYMENT" in ref_upper else "TUITION"
 
-    credit_to_post = 0
-    if amount < expected_due:
-        # Downpayment becomes available credit for upcoming term dues.
-        credit_to_post = amount
-    elif amount > expected_due:
-        # Only the excess beyond due is credit.
-        credit_to_post = amount - expected_due
-    overpayment = amount - expected_due if amount > expected_due else 0
+    if kind == "ENLISTMENT":
+        expected_due = payment.enlistment_amount
+        if expected_due <= 0:
+            raise ValidationError("Enlistment fee is not set.")
+        prior_paid = payment.enlistment_paid_amount
+        new_total_paid = prior_paid + amount
+        payment.enlistment_paid_amount = min(new_total_paid, expected_due)
+        fully_paid = payment.enlistment_paid_amount >= expected_due
+        payment.enlistment_paid = fully_paid
+    else:
+        if not payment.enlistment_paid:
+            raise ValidationError("Tuition payment is allowed only after enlistment fee is fully paid.")
+        expected_due = payment.tuition_amount
+        if expected_due <= 0:
+            raise ValidationError("Tuition fee is not set.")
+        prior_paid = payment.tuition_paid_amount
+        new_total_paid = prior_paid + amount
+        payment.tuition_paid_amount = min(new_total_paid, expected_due)
+        fully_paid = payment.tuition_paid_amount >= expected_due
+
+    payment.amount = payment.tuition_amount
+    payment.submitted_amount = amount
+    payment.status = Payment.Status.SUCCESS if fully_paid else Payment.Status.PENDING
+    payment.reference = reference
+    payment.save(
+        update_fields=[
+            "amount",
+            "submitted_amount",
+            "status",
+            "reference",
+            "enlistment_paid_amount",
+            "tuition_paid_amount",
+            "enlistment_paid",
+        ]
+    )
+
+    remaining_due_before = max(expected_due - prior_paid, Decimal("0.00"))
+    overpayment = amount - remaining_due_before if amount > remaining_due_before else Decimal("0.00")
+    credit_to_post = overpayment
     if credit_to_post > 0:
         acct, _ = StudentFinanceAccount.objects.get_or_create(student=enlistment.student, defaults={"balance": 0})
         acct.balance = acct.balance - credit_to_post
         acct.save(update_fields=["balance"])
 
-    fully_paid = amount >= expected_due
-    if fully_paid:
+    if kind == "TUITION" and fully_paid:
         enlistment.status = Enlistment.Status.ENROLLED
         enlistment.save(update_fields=["status", "updated_at"])
     log_history(
@@ -240,18 +314,18 @@ def finance_record_payment(user, enlistment, amount, reference=""):
         enlistment=enlistment,
         action=HistoryLog.Action.PAYMENT_RECORDED,
         message=(
-            f"Payment recorded by finance: {amount}. Ref: {reference}"
+            f"{kind.title()} payment recorded by finance: {amount}. Ref: {reference}"
             if reference
-            else f"Payment recorded by finance: {amount}."
+            else f"{kind.title()} payment recorded by finance: {amount}."
         ),
     )
-    if fully_paid:
+    if kind == "TUITION" and fully_paid:
         log_history(
             actor=user,
             enlistment=enlistment,
             action=HistoryLog.Action.ENROLLED,
             message="Enrollment confirmed by finance.",
         )
-    return enlistment, fully_paid, overpayment
+    return enlistment, fully_paid, overpayment, kind
 
 

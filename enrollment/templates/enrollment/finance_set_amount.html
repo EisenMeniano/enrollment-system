@@ -2,9 +2,10 @@
 {% block title %}Set Amount{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>Set Amount Due</h2>
+  <h2>Set Amount Due (Separate Fees)</h2>
   <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
   <p><strong>Enlistment:</strong> #{{ enlistment.id }} ({{ enlistment.school_year }} - {{ enlistment.semester }})</p>
+  <p>Set enlistment fee (Down Payment page) and tuition fee (My Payment page) separately.</p>
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}

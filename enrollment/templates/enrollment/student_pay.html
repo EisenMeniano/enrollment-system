@@ -4,12 +4,12 @@
 <div class="card">
   <h2>Proceed to Payment</h2>
   <p><strong>Enlistment:</strong> #{{ enlistment.id }} ({{ enlistment.school_year }} - {{ enlistment.semester }})</p>
-  {% if payment %}
-    <p><strong>Amount Due:</strong> {{ payment.amount }}</p>
-  {% endif %}
+  <p><strong>Payment Type:</strong> {% if payment_kind == "ENLISTMENT" %}Enlistment Fee{% else %}Tuition Fee{% endif %}</p>
+  <p><strong>Amount Due:</strong> {{ due_amount }}</p>
   <p>Enter your payment amount and optional reference. Finance will review and approve this payment.</p>
   <form method="post">
     {% csrf_token %}
+    <input type="hidden" name="payment_kind" value="{{ payment_kind }}">
     {{ form.as_p }}
     <button class="btn" type="submit">Submit Payment</button>
     <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>

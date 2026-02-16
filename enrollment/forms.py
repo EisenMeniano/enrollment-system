@@ -40,11 +40,19 @@ class PaymentForm(forms.Form):
     reference = forms.CharField(max_length=100, required=False, help_text="Optional payment reference / OR number.")
 
 class FinanceAmountForm(forms.Form):
-    amount = forms.DecimalField(
+    enlistment_amount = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
         min_value=0,
-        help_text="Set the amount the student needs to pay.",
+        help_text="Set enlistment fee amount (Down Payment page).",
+        label="Enlistment Fee Amount",
+    )
+    tuition_amount = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        help_text="Set tuition/enrollment fee amount (My Payment page).",
+        label="Tuition Fee Amount",
     )
 
 class StudentSubjectSelectForm(forms.Form):
