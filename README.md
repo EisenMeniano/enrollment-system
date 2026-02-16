@@ -88,6 +88,43 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
+### 5.1) One-command startup scripts (recommended for team)
+Host machine (starts shared Postgres):
+
+PowerShell:
+```powershell
+.\scripts\start-db.ps1
+```
+
+Bash:
+```bash
+bash ./scripts/start-db.sh
+```
+
+Each teammate (runs migrations + starts Django):
+
+PowerShell:
+```powershell
+.\scripts\start-dev.ps1
+```
+
+Bash:
+```bash
+bash ./scripts/start-dev.sh
+```
+
+Optional (skip migrate once you know schema is up to date):
+
+PowerShell:
+```powershell
+.\scripts\start-dev.ps1 -SkipMigrate
+```
+
+Bash:
+```bash
+bash ./scripts/start-dev.sh --skip-migrate
+```
+
 ## 6) Deployment (gunicorn + nginx)
 Sample configs in `/deploy`.
 ## Admin looks unstyled (no CSS)?
