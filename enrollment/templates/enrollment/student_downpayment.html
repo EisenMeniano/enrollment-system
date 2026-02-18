@@ -15,15 +15,15 @@
           margin: 10px 0 20px;
         }
         .step-card {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           border-radius: 8px;
           padding: 14px 16px;
-          background: #fff;
+          background: var(--panel);
         }
         .step-card .bar {
           height: 4px;
           border-radius: 999px;
-          background: #e0e0e0;
+          background: var(--border);
           margin-bottom: 10px;
         }
         .step-card.active .bar {
@@ -43,12 +43,12 @@
         }
         .step-card p {
           margin: 0;
-          color: #455a64;
+          color: var(--muted);
           font-weight: 600;
         }
         .section-subtitle {
           font-weight: 700;
-          color: #37474f;
+          color: var(--ink);
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -67,14 +67,14 @@
           gap: 16px;
         }
         .info-box {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           border-radius: 8px;
           overflow: hidden;
         }
         .info-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          border-bottom: 1px solid #e0e0e0;
+          border-bottom: 1px solid var(--border);
         }
         .info-row:last-child {
           border-bottom: 0;
@@ -84,7 +84,7 @@
         }
         .info-row .label {
           font-weight: 700;
-          color: #455a64;
+          color: var(--muted);
         }
         .info-row .value {
           text-align: right;
@@ -92,15 +92,15 @@
           font-weight: 700;
         }
         .note-box {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           border-radius: 8px;
           padding: 12px 14px;
-          background: #fff;
+          background: var(--panel);
         }
         .note-box ul {
           margin: 0;
           padding-left: 18px;
-          color: #455a64;
+          color: var(--muted);
         }
         .fees-table {
           width: 100%;
@@ -109,13 +109,13 @@
         }
         .fees-table th,
         .fees-table td {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           padding: 10px 12px;
           text-align: left;
         }
         .fees-table thead th {
-          background: #f3f7ff;
-          color: #455a64;
+          background: var(--bg);
+          color: var(--muted);
           font-weight: 700;
         }
         .fees-table .amount {
@@ -134,17 +134,17 @@
           margin: 14px 0 6px;
         }
         .pay-card {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           border-radius: 8px;
           padding: 12px 14px;
-          background: #fff;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+          background: var(--panel);
+          box-shadow: var(--shadow);
         }
         .pay-card h4 {
           margin: 0 0 10px;
           font-size: 14px;
           font-weight: 700;
-          color: #455a64;
+          color: var(--muted);
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -157,7 +157,7 @@
           display: inline-block;
         }
         .pay-card .amount-box {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           border-radius: 6px;
           padding: 10px 12px;
           display: flex;
@@ -184,14 +184,14 @@
         }
         .receipts-table th,
         .receipts-table td {
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--border);
           padding: 8px 10px;
           text-align: left;
           font-size: 13px;
         }
         .receipts-table thead th {
-          background: #f3f7ff;
-          color: #455a64;
+          background: var(--bg);
+          color: var(--muted);
           font-weight: 700;
         }
         .status-complete {

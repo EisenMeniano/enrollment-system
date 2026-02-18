@@ -430,42 +430,50 @@
       border-color:rgba(255,255,255,.5);
     }
     .theme-toggle .theme-icon{
-      width:16px;
-      height:16px;
-      border-radius:50%;
+      width:18px;
+      height:18px;
       position:relative;
       display:block;
     }
-    .theme-toggle[data-state="light"] .theme-icon{
-      background:#f7f3e6;
-    }
-    .theme-toggle[data-state="light"] .theme-icon::after{
-      content:"";
+    .theme-toggle .theme-icon svg{
       position:absolute;
       inset:0;
-      transform:translate(4px,-2px);
-      border-radius:50%;
-      background:rgba(57,78,37,.95);
+      width:100%;
+      height:100%;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+      opacity:0;
+      transform:scale(.82) rotate(-16deg);
+      transform-origin:center;
+      transition:opacity .18s ease, transform .22s ease, color .2s ease;
+    }
+    .theme-toggle .icon-moon{
+      opacity:1;
+      transform:scale(1) rotate(0deg);
+    }
+    .theme-toggle[data-state="dark"] .icon-moon{
+      opacity:0;
+      transform:scale(.82) rotate(16deg);
+    }
+    .theme-toggle[data-state="light"] .icon-sun{
+      opacity:0;
+      transform:scale(.82) rotate(-16deg);
+    }
+    .theme-toggle[data-state="light"] .theme-icon{ color:#f7f3e6; }
+    .theme-toggle[data-state="light"] .icon-moon{
+      opacity:1;
+      transform:scale(1) rotate(0deg);
+    }
+    .theme-toggle[data-state="dark"] .theme-icon{ color:#f3cd53; }
+    .theme-toggle[data-state="dark"] .icon-sun{
+      opacity:1;
+      transform:scale(1) rotate(0deg);
     }
     .theme-toggle[data-state="dark"] .theme-icon{
-      background:#f3cd53;
-      box-shadow:0 0 0 2px rgba(243,205,83,.3);
-    }
-    .theme-toggle[data-state="dark"] .theme-icon::before,
-    .theme-toggle[data-state="dark"] .theme-icon::after{
-      content:"";
-      position:absolute;
-      left:50%;
-      top:50%;
-      width:22px;
-      height:2px;
-      margin-left:-11px;
-      margin-top:-1px;
-      border-radius:999px;
-      background:rgba(243,205,83,.88);
-    }
-    .theme-toggle[data-state="dark"] .theme-icon::after{
-      transform:rotate(90deg);
+      filter:drop-shadow(0 0 4px rgba(243,205,83,.22));
     }
 
     @media (prefers-reduced-motion: reduce){
@@ -608,7 +616,22 @@
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
-        <span class="theme-icon" aria-hidden="true"></span>
+        <span class="theme-icon" aria-hidden="true">
+          <svg class="icon-moon" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z"></path>
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="M4.93 4.93l1.41 1.41"></path>
+            <path d="M17.66 17.66l1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="M4.93 19.07l1.41-1.41"></path>
+            <path d="M17.66 6.34l1.41-1.41"></path>
+          </svg>
+        </span>
       </button>
       {% if user.is_authenticated %}
         <div class="profile-menu">
