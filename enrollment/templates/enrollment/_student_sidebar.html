@@ -1,22 +1,29 @@
 <aside class="side-nav">
-  <div class="side-group-title-simple">Student Management</div>
+  <div class="side-nav-head">Main Menu</div>
 
+  <div class="side-group" data-key="core">
+    <button class="side-group-toggle" type="button" aria-expanded="true">
+      <span class="side-group-title">Transactions</span>
+      <span class="chev">v</span>
+    </button>
+    <div class="side-group-items">
+      <a class="{% if active == 'student_enlistment' %}active{% endif %}" href="{% url 'enrollment:student_enlistment_page' %}">Student Enlistment</a>
+      <a class="{% if active == 'downpayment' %}active{% endif %}" href="{% url 'enrollment:student_downpayment' %}">Down Payment</a>
+      <a class="{% if active == 'my_payment' %}active{% endif %}" href="{% url 'enrollment:student_my_payment' %}">My Payment</a>
+      <a class="{% if active == 'inc_completion' %}active{% endif %}" href="{% url 'enrollment:student_inc_completion' %}">INC Completion Apply</a>
+    </div>
+  </div>
+
+  <div class="side-group-title-simple">Student Profile</div>
   <div class="side-group" data-key="student-profile">
     <button class="side-group-toggle" type="button" aria-expanded="true">
-      <span class="side-group-title">Student Profile</span>
-      <span class="chev">▾</span>
+      <span class="side-group-title">Profile Menu</span>
+      <span class="chev">v</span>
     </button>
     <div class="side-group-items">
       {% for item in menu_items %}
         <a class="{% if active == item.slug %}active{% endif %}" href="{{ item.url }}">{{ item.label }}</a>
       {% endfor %}
     </div>
-  </div>
-
-  <div class="side-group-items" style="margin-top:8px;">
-    <a class="{% if active == 'downpayment' %}active{% endif %}" href="{% url 'enrollment:student_downpayment' %}">Down Payment</a>
-    <a class="{% if active == 'student_enlistment' %}active{% endif %}" href="{% url 'enrollment:student_enlistment_page' %}">Student Enlistment</a>
-    <a class="{% if active == 'my_payment' %}active{% endif %}" href="{% url 'enrollment:student_my_payment' %}">My Payment</a>
-    <a class="{% if active == 'inc_completion' %}active{% endif %}" href="{% url 'enrollment:student_inc_completion' %}">INC Completion Apply</a>
   </div>
 </aside>
