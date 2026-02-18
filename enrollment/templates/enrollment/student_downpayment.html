@@ -297,7 +297,7 @@
         </thead>
         <tbody>
           <tr>
-            <td>DOWN PAYMENT AMOUNT</td>
+            <td>ENLISTMENT FEE</td>
             <td class="amount">{{ payment_breakdown.down_payment|floatformat:2 }}</td>
           </tr>
           <tr>
@@ -348,7 +348,7 @@
         </div>
       </div>
 
-      <p class="verify-note">Dear Candidate, Your payment is verified.</p>
+      <p class="verify-note">Dear {{ user.get_full_name|default:user.student_number }}, Your payment is verified with the down payment.</p>
 
       <div class="section-subtitle">Previous Receipts Information</div>
       <table class="receipts-table">
