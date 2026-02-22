@@ -364,7 +364,7 @@ def student_profile_grade(request):
     latest_enlistment = Enlistment.objects.filter(student=request.user).first()
     sessions = SchoolYear.objects.order_by("-label")
     menu_items = StudentProfileMenuItem.get_menu()
-    return render(
+    return render( 
         request,
         "enrollment/student_profile_grade.html",
         {"profile": profile, "sessions": sessions, "latest_enlistment": latest_enlistment, "menu_items": menu_items},
