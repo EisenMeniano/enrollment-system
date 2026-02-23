@@ -305,7 +305,7 @@
         {% endif %}
       </p>
 
-      <p class="verify-note">Dear {{ user.first_name|default:"Student" }} {{ user.last_name|default:"" }}, Your payment is verified.</p>
+      <p class="verify-note">Dear {{ user.get_full_name|default:user.student_number }}, your payment has been verified.</p>
 
       <div class="section-subtitle">Previous Receipts Information</div>
       <table class="receipts-table">

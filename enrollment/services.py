@@ -1,6 +1,8 @@
 from decimal import Decimal
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from decimal import Decimal
+import re
 from .models import Enlistment, Payment, EnlistmentSubject, Subject, HistoryLog, StudentFinanceAccount
 
 def log_history(actor, enlistment, action, message=""):
@@ -14,6 +16,27 @@ def log_history(actor, enlistment, action, message=""):
 def require_role(user, roles):
     if not user.is_authenticated or user.role not in roles:
         raise PermissionDenied("You do not have access to this action.")
+
+
+def _resolve_amount_due(enlistment, payment):
+    zero = Decimal("0.00")
+    amount_due = payment.amount or zero
+    amount_set_log = (
+        HistoryLog.objects.filter(enlistment=enlistment, action=HistoryLog.Action.AMOUNT_SET)
+        .order_by("-created_at")
+        .values_list("message", flat=True)
+        .first()
+    )
+    if amount_set_log:
+        match = re.search(r"Set amount to\s+([0-9]+(?:\.[0-9]+)?)", amount_set_log)
+        if match:
+            try:
+                parsed = Decimal(match.group(1))
+                if parsed > zero:
+                    amount_due = parsed
+            except Exception:
+                pass
+    return amount_due
 
 def can_finance_approve(enlistment):
     # Rule 1: must have finance account and balance must be 0

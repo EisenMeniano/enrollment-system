@@ -3,6 +3,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from decimal import Decimal, ROUND_DOWN
+import re
 
 from accounts.models import User, StudentProfile
 from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm, PhotoSignatureForm
@@ -295,10 +296,18 @@ def student_profile_schedule(request):
 
 def _student_profile_placeholder(request, active, title):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    latest_enlistment = Enlistment.objects.filter(student=request.user).first()
+    menu_items = StudentProfileMenuItem.get_menu()
     return render(
         request,
         "enrollment/student_profile_placeholder.html",
-        {"profile": profile, "active": active, "title": title},
+        {
+            "profile": profile,
+            "active": active,
+            "title": title,
+            "latest_enlistment": latest_enlistment,
+            "menu_items": menu_items,
+        },
     )
 
 
