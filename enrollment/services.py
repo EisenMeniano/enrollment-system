@@ -1,9 +1,8 @@
 from decimal import Decimal
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from decimal import Decimal
 import re
-from .models import Enlistment, Payment, EnlistmentSubject, Subject, HistoryLog, StudentFinanceAccount
+from .models import Enlistment, Payment, HistoryLog, StudentFinanceAccount
 
 def log_history(actor, enlistment, action, message=""):
     HistoryLog.objects.create(
@@ -150,18 +149,13 @@ def finance_review(user, enlistment, approve_if_ok=True):
     return enlistment
 
 @transaction.atomic
-def adviser_final_approve_and_add_subjects(user, enlistment, subject_ids):
+def adviser_final_approve_and_add_subjects(user, enlistment, subject_ids=None):
     require_role(user, ["ADVISER"])
     if enlistment.status != Enlistment.Status.FINANCE_APPROVED:
         raise ValidationError("Enlistment must be cleared by finance before final approval.")
-    if not subject_ids:
-        raise ValidationError("Please add at least one subject for the next semester.")
-
-    # Replace subjects
-    EnlistmentSubject.objects.filter(enlistment=enlistment).delete()
-    subjects = Subject.objects.filter(id__in=subject_ids)
-    for s in subjects:
-        EnlistmentSubject.objects.create(enlistment=enlistment, subject=s)
+    has_block_setup = enlistment.block_options.filter(subjects__isnull=False).exists()
+    if not has_block_setup:
+        raise ValidationError("Finance must set at least one block with schedules before adviser final approval.")
 
     enlistment.status = Enlistment.Status.APPROVED_FOR_PAYMENT
     enlistment.adviser_final_approved_by = user
@@ -171,7 +165,7 @@ def adviser_final_approve_and_add_subjects(user, enlistment, subject_ids):
         actor=user,
         enlistment=enlistment,
         action=HistoryLog.Action.FINAL_APPROVED,
-        message="Final approval complete. Subjects added.",
+        message="Final approval complete. Student can now choose a block/schedule.",
     )
 
     # Initialize payment only when missing. Do not overwrite an amount already set by finance.

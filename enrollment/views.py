@@ -3,12 +3,13 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from decimal import Decimal, ROUND_DOWN
-import re
 
 from accounts.models import User, StudentProfile
 from accounts.forms import PersonalDetailsUserForm, PersonalDetailsProfileForm, AddressDetailsForm, CourseDetailsForm, PhotoSignatureForm
 from .models import (
     Enlistment,
+    EnlistmentBlock,
+    EnlistmentBlockSubject,
     Payment,
     HistoryLog,
     EnlistmentSubject,
@@ -24,7 +25,14 @@ from .models import (
     CurriculumProgressCourse,
     StudentProfileMenuItem,
 )
-from .forms import EnlistmentCreateForm, ReturnReasonForm, SubjectSelectForm, PaymentForm, FinanceAmountForm, StudentSubjectSelectForm
+from .forms import (
+    EnlistmentCreateForm,
+    ReturnReasonForm,
+    PaymentForm,
+    FinanceAmountForm,
+    FinanceBlockSetupForm,
+    StudentBlockSelectForm,
+)
 from .services import (
     student_submit_enlistment,
     adviser_preapprove,
@@ -44,6 +52,87 @@ def role_required(*roles):
             return view_func(request, *args, **kwargs)
         return _wrapped
     return decorator
+
+
+def _parse_block_schedule_lines(raw_lines):
+    def _normalize(text):
+        return "".join(ch for ch in (text or "").upper() if ch.isalnum())
+
+    subjects = list(Subject.objects.all())
+    subjects_by_code = {_normalize(subject.code): subject for subject in subjects}
+
+    def _make_subject_from_text(subject_hint):
+        base = _normalize(subject_hint)[:20] or "SUBJ"
+        code = base
+        counter = 2
+        while Subject.objects.filter(code=code).exists():
+            suffix = str(counter)
+            code = f"{base[: max(1, 20 - len(suffix))]}{suffix}"
+            counter += 1
+        title = subject_hint.strip() or code
+        subject = Subject.objects.create(code=code, title=title, units=3)
+        subjects_by_code[_normalize(subject.code)] = subject
+        subjects.append(subject)
+        return subject
+
+    def _resolve_subject(subject_hint):
+        norm_hint = _normalize(subject_hint)
+        if not norm_hint:
+            return None
+        if norm_hint in subjects_by_code:
+            return subjects_by_code[norm_hint]
+        for code_norm, subject in subjects_by_code.items():
+            if code_norm.startswith(norm_hint):
+                return subject
+        for subject in subjects:
+            if norm_hint in _normalize(subject.title):
+                return subject
+        # Fallback: allow entering title keywords instead of exact code.
+        hint_words = [w for w in subject_hint.strip().split() if w]
+        if not hint_words:
+            return _make_subject_from_text(subject_hint)
+        for subject in subjects:
+            title_up = (subject.title or "").upper()
+            if all(word.upper() in title_up for word in hint_words):
+                return subject
+        return _make_subject_from_text(subject_hint)
+
+    parsed_items = []
+    errors = []
+    for line_no, raw_line in enumerate((raw_lines or "").splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        # Accept flexible formats:
+        # ENG101 | 7:30 - 9:00
+        # ENG 101 - 7:30 - 9:00
+        subject_hint = ""
+        schedule = ""
+        if "|" in line:
+            subject_hint, schedule = [part.strip() for part in line.split("|", 1)]
+        elif " - " in line:
+            subject_hint, schedule = [part.strip() for part in line.split(" - ", 1)]
+        else:
+            tokens = line.split(None, 1)
+            subject_hint = tokens[0].strip() if tokens else ""
+            schedule = tokens[1].strip() if len(tokens) > 1 else ""
+
+        if not subject_hint:
+            errors.append(f"Line {line_no}: add a subject name/code.")
+            continue
+        if not schedule:
+            schedule = "TBA"
+
+        subject = _resolve_subject(subject_hint)
+        if not subject:
+            errors.append(f"Line {line_no}: could not resolve subject '{subject_hint}'.")
+            continue
+        parsed_items.append((subject, schedule))
+    if not parsed_items and not errors:
+        errors.append("Add at least one schedule line.")
+    return parsed_items, errors
+
 
 @login_required
 def dashboard(request):
@@ -83,8 +172,11 @@ def student_enlistment_create(request):
                     semester=form.cleaned_data["semester"].name,
                     notes=form.cleaned_data.get("notes", ""),
                 )
-                messages.success(request, "Enlistment submitted. Waiting for adviser review.")
-                return redirect("enrollment:student_subject_select", pk=enlistment.pk)
+                messages.success(
+                    request,
+                    "Enrollment submitted. Waiting for adviser and finance review before subject enlistment.",
+                )
+                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
             except ValidationError as e:
                 form.add_error(None, e.messages[0] if e.messages else "Unable to submit enlistment.")
     else:
@@ -107,37 +199,34 @@ def student_pay(request, pk):
     payment_kind = (request.POST.get("payment_kind") or request.GET.get("fee_kind") or "TUITION").upper()
     if payment_kind not in {"ENLISTMENT", "TUITION"}:
         payment_kind = "TUITION"
-    prefill_amount = request.GET.get("amount")
     prefill_reference = request.GET.get("reference", "")
+    due_amount = Decimal("0.00")
+    if payment:
+        due_amount = payment.enlistment_amount if payment_kind == "ENLISTMENT" else payment.tuition_amount
     if request.method == "POST":
         form = PaymentForm(request.POST)
         if form.is_valid():
             try:
+                # Counter-payment flow: student marks payment intent, finance confirms later.
+                amount_to_submit = due_amount
                 student_mark_paid(
                     request.user,
                     enlistment,
-                    amount=form.cleaned_data["amount"],
+                    amount=amount_to_submit,
                     reference=form.cleaned_data.get("reference", ""),
                     payment_kind=payment_kind,
                 )
-                messages.success(request, "Payment submitted. Waiting for finance approval.")
+                messages.success(request, "Payment is pending finance approval.")
                 return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
             except Exception as e:
                 messages.error(request, str(e))
     else:
-        initial_amount = payment.amount if payment else 0
-        if prefill_amount:
-            try:
-                initial_amount = Decimal(str(prefill_amount))
-            except Exception:
-                pass
-        elif payment:
-            initial_amount = payment.enlistment_amount if payment_kind == "ENLISTMENT" else payment.tuition_amount
+        initial_amount = due_amount
         initial_reference = prefill_reference or (payment.reference if payment else "")
         form = PaymentForm(initial={"amount": initial_amount, "reference": initial_reference})
-    due_amount = Decimal("0.00")
-    if payment:
-        due_amount = payment.enlistment_amount if payment_kind == "ENLISTMENT" else payment.tuition_amount
+    # Amount is fixed to due amount for counter-payment flow.
+    form.fields["amount"].widget.attrs["readonly"] = True
+    form.fields["amount"].help_text = "Fixed due amount for cashier/counter verification."
     return render(
         request,
         "enrollment/student_pay.html",
@@ -161,27 +250,73 @@ def student_subject_select(request, pk):
             "enrollment/enrollment_closed.html",
             {"message": window.message or "Enrollment is currently closed."},
         )
-    if enlistment.status not in [Enlistment.Status.SUBMITTED, Enlistment.Status.RETURNED]:
-        messages.error(request, "Subject selection is only allowed after submission.")
+    if enlistment.status != Enlistment.Status.APPROVED_FOR_PAYMENT:
+        messages.error(
+            request,
+            "Apply for Enlistment opens only after adviser final approval.",
+        )
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+    payment = getattr(enlistment, "payment", None)
+    if not payment or not payment.enlistment_paid:
+        messages.error(
+            request,
+            "Pay and clear the enlistment fee first. Subject enlistment opens after finance approves it.",
+        )
         return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
 
-    selected = list(enlistment.next_subjects.values_list("subject_id", flat=True))
+    available_blocks = (
+        EnlistmentBlock.objects.filter(enlistment=enlistment)
+        .prefetch_related("subjects__subject")
+        .order_by("name")
+    )
+    if not available_blocks.exists():
+        messages.error(request, "Finance has not configured block schedules yet.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
     if request.method == "POST":
-        form = StudentSubjectSelectForm(request.POST)
+        form = StudentBlockSelectForm(request.POST, block_queryset=available_blocks)
         if form.is_valid():
+            selected_block = form.cleaned_data["block"]
+            enlistment.selected_block = selected_block
+            enlistment.save(update_fields=["selected_block", "updated_at"])
+
+            # Keep next_subjects synchronized for existing pages/reports.
             EnlistmentSubject.objects.filter(enlistment=enlistment).delete()
-            for subject in form.cleaned_data["subjects"]:
-                EnlistmentSubject.objects.create(enlistment=enlistment, subject=subject)
-            messages.success(request, "Subjects saved.")
+            for block_subject in selected_block.subjects.select_related("subject"):
+                EnlistmentSubject.objects.get_or_create(enlistment=enlistment, subject=block_subject.subject)
+
+            payment, _ = Payment.objects.get_or_create(
+                enlistment=enlistment,
+                defaults={
+                    "enlistment_amount": 0,
+                    "tuition_amount": 0,
+                    "amount": 0,
+                    "status": Payment.Status.PENDING,
+                },
+            )
+            payment.tuition_amount = selected_block.tuition_amount
+            payment.amount = selected_block.tuition_amount
+            payment.save(update_fields=["tuition_amount", "amount"])
+
+            messages.success(
+                request,
+                f"Block '{selected_block.name}' selected. Final tuition fee is {selected_block.tuition_amount}.",
+            )
             return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
     else:
-        form = StudentSubjectSelectForm(initial={"subjects": list(selected)})
-
-    subjects = Subject.objects.all().order_by("code")
+        form = StudentBlockSelectForm(
+            initial={"block": enlistment.selected_block_id},
+            block_queryset=available_blocks,
+        )
     return render(
         request,
         "enrollment/student_subject_select.html",
-        {"enlistment": enlistment, "form": form, "subjects": subjects, "selected_ids": set(selected)},
+        {
+            "enlistment": enlistment,
+            "form": form,
+            "blocks": available_blocks,
+            "selected_block": enlistment.selected_block,
+        },
     )
 
 @login_required
@@ -598,9 +733,50 @@ def student_downpayment(request):
 @role_required("STUDENT")
 def student_enlistment_page(request):
     profile, _ = StudentProfile.objects.get_or_create(user=request.user)
-    enlistments = Enlistment.objects.filter(student=request.user)
+    enlistments = Enlistment.objects.filter(student=request.user).select_related(
+        "category",
+        "program",
+        "selected_block",
+        "payment",
+    )
     latest_enlistment = enlistments.first()
     menu_items = StudentProfileMenuItem.get_menu()
+    apply_enlistment = (
+        enlistments.filter(
+            status=Enlistment.Status.APPROVED_FOR_PAYMENT,
+            payment__enlistment_paid=True,
+            block_options__subjects__isnull=False,
+        )
+        .distinct()
+        .first()
+    )
+    apply_enlistment_reason = ""
+    if not apply_enlistment:
+        if not latest_enlistment:
+            apply_enlistment_reason = "Apply for Enlistment is locked. Click Enrollment first."
+        elif latest_enlistment.status in {
+            Enlistment.Status.SUBMITTED,
+            Enlistment.Status.RETURNED,
+            Enlistment.Status.FINANCE_REVIEW,
+            Enlistment.Status.FINANCE_HOLD_BALANCE,
+            Enlistment.Status.FINANCE_HOLD_ACADEMIC,
+            Enlistment.Status.FINANCE_APPROVED,
+        }:
+            apply_enlistment_reason = (
+                "Apply for Enlistment is locked while your enrollment is under adviser/finance review."
+            )
+        elif latest_enlistment.status == Enlistment.Status.APPROVED_FOR_PAYMENT:
+            latest_payment = getattr(latest_enlistment, "payment", None)
+            if not latest_payment or not latest_payment.enlistment_paid:
+                apply_enlistment_reason = (
+                    "Apply for Enlistment is locked. Pay and clear enlistment fee first."
+                )
+            else:
+                apply_enlistment_reason = "Waiting for finance to set blocks/schedules before you can apply."
+        elif latest_enlistment.status == Enlistment.Status.ENROLLED:
+            apply_enlistment_reason = "Your latest enrollment is already confirmed."
+        else:
+            apply_enlistment_reason = "Apply for Enlistment is currently unavailable."
     return render(
         request,
         "enrollment/student_enlistment_page.html",
@@ -609,6 +785,8 @@ def student_enlistment_page(request):
             "latest_enlistment": latest_enlistment,
             "menu_items": menu_items,
             "enlistments": enlistments,
+            "apply_enlistment": apply_enlistment,
+            "apply_enlistment_reason": apply_enlistment_reason,
         },
     )
 
@@ -638,10 +816,12 @@ def student_my_payment(request):
         my_payment_message = "No enlistment found yet."
     elif latest_enlistment.status not in my_payment_open_statuses:
         my_payment_message = "My Payment opens only after adviser final approval and finance tuition setup."
+    elif not latest_enlistment.selected_block_id:
+        my_payment_message = "Choose your block/schedule first in Apply for Enlistment to generate final tuition."
     elif not getattr(latest_enlistment, "payment", None) or not latest_enlistment.payment.enlistment_paid:
         my_payment_message = "Pay and clear enlistment fee first before tuition payment."
     elif payment_breakdown["total"] <= 0:
-        my_payment_message = "Waiting for finance to set your tuition amount."
+        my_payment_message = "Final tuition is not ready yet. Please reselect your block/schedule."
     elif payment_breakdown["remaining_after_downpayment"] <= 0:
         my_payment_message = "No remaining enrollment balance to pay."
     else:
@@ -678,7 +858,11 @@ def student_inc_completion(request):
 @role_required("ADVISER")
 def adviser_dashboard(request):
     pending_pre = Enlistment.objects.filter(status__in=[Enlistment.Status.SUBMITTED, Enlistment.Status.RETURNED])
-    pending_final = Enlistment.objects.filter(status=Enlistment.Status.FINANCE_APPROVED)
+    pending_final = (
+        Enlistment.objects.filter(status=Enlistment.Status.FINANCE_APPROVED)
+        .select_related("payment", "category", "program")
+        .prefetch_related("block_options__subjects")
+    )
     return render(
         request,
         "enrollment/adviser_dashboard.html",
@@ -717,30 +901,51 @@ def adviser_return_view(request, pk):
 @role_required("ADVISER")
 def adviser_final_approve_view(request, pk):
     enlistment = get_object_or_404(Enlistment, pk=pk)
+    available_blocks = (
+        EnlistmentBlock.objects.filter(enlistment=enlistment)
+        .prefetch_related("subjects__subject")
+        .order_by("name")
+    )
+    if not available_blocks.exists():
+        messages.error(request, "Finance must configure at least one block/schedule before final adviser approval.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+    payment = getattr(enlistment, "payment", None)
+    if not payment or payment.enlistment_amount <= 0:
+        messages.error(request, "Finance must set enlistment fee first before adviser final approval.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
     if request.method == "POST":
-        form = SubjectSelectForm(request.POST)
-        if form.is_valid():
-            try:
-                adviser_final_approve_and_add_subjects(
-                    request.user,
-                    enlistment,
-                    subject_ids=[s.id for s in form.cleaned_data["subjects"]],
-                )
-                messages.success(request, "Final approval complete. Student can proceed to payment.")
-                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
-            except Exception as e:
-                messages.error(request, str(e))
-    else:
-        form = SubjectSelectForm()
-    return render(request, "enrollment/adviser_final_approve.html", {"enlistment": enlistment, "form": form})
+        try:
+            adviser_final_approve_and_add_subjects(request.user, enlistment)
+            messages.success(
+                request,
+                "Enlistment approved. Student can now pay enlistment fee. Subject/block choice opens after finance approves that payment.",
+            )
+            return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+        except Exception as e:
+            messages.error(request, str(e))
+    return render(
+        request,
+        "enrollment/adviser_final_approve.html",
+        {"enlistment": enlistment, "available_blocks": available_blocks},
+    )
 
 # ---------------------- FINANCE ----------------------
 @login_required
 @role_required("FINANCE")
 def finance_dashboard(request):
     pending = Enlistment.objects.filter(status=Enlistment.Status.FINANCE_REVIEW)
-    holds = Enlistment.objects.filter(status__in=[Enlistment.Status.FINANCE_HOLD_BALANCE, Enlistment.Status.FINANCE_HOLD_ACADEMIC])
-    approved_for_payment = Enlistment.objects.filter(status=Enlistment.Status.APPROVED_FOR_PAYMENT)
+    holds = Enlistment.objects.filter(
+        status__in=[Enlistment.Status.FINANCE_HOLD_BALANCE, Enlistment.Status.FINANCE_HOLD_ACADEMIC]
+    )
+    setup_required = (
+        Enlistment.objects.filter(status=Enlistment.Status.FINANCE_APPROVED)
+        .select_related("category", "program")
+        .prefetch_related("block_options")
+    )
+    approved_for_payment = Enlistment.objects.filter(status=Enlistment.Status.APPROVED_FOR_PAYMENT).select_related(
+        "selected_block"
+    )
     pending_payment_approval = approved_for_payment.filter(payment__status=Payment.Status.SUBMITTED)
     window = EnrollmentWindow.get_solo()
     return render(
@@ -749,6 +954,7 @@ def finance_dashboard(request):
         {
             "pending": pending,
             "holds": holds,
+            "setup_required": setup_required,
             "approved_for_payment": approved_for_payment,
             "pending_payment_approval": pending_payment_approval,
             "window": window,
@@ -762,12 +968,96 @@ def finance_review_view(request, pk):
     try:
         finance_review(request.user, enlistment, approve_if_ok=True)
         if enlistment.status == Enlistment.Status.FINANCE_APPROVED:
-            messages.success(request, "Cleared. Adviser can now finalize and add subjects.")
+            messages.success(request, "Cleared. Finance should now set blocks/schedules and tuition per block.")
         else:
             messages.warning(request, f"Held: {enlistment.hold_reason}")
     except Exception as e:
         messages.error(request, str(e))
     return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+
+@login_required
+@role_required("FINANCE")
+def finance_subject_setup_view(request, pk):
+    enlistment = get_object_or_404(Enlistment, pk=pk)
+    if enlistment.status not in [Enlistment.Status.FINANCE_APPROVED, Enlistment.Status.APPROVED_FOR_PAYMENT]:
+        messages.error(request, "Blocks and schedules can be managed only after finance clearance.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+
+    payment = getattr(enlistment, "payment", None)
+    if request.method == "POST":
+        form = FinanceBlockSetupForm(request.POST)
+        if form.is_valid():
+            parsed_items, parse_errors = _parse_block_schedule_lines(form.cleaned_data["schedule_lines"])
+            if parse_errors:
+                form.add_error("schedule_lines", " ".join(parse_errors))
+            else:
+                block_name = form.cleaned_data["block_name"].strip()
+                tuition_amount = form.cleaned_data["tuition_amount"]
+                enlistment_amount = form.cleaned_data["enlistment_amount"]
+
+                block, _ = EnlistmentBlock.objects.get_or_create(
+                    enlistment=enlistment,
+                    name=block_name,
+                    defaults={"created_by": request.user},
+                )
+                block.tuition_amount = tuition_amount
+                block.created_by = request.user
+                block.save(update_fields=["tuition_amount", "created_by", "updated_at"])
+
+                EnlistmentBlockSubject.objects.filter(block=block).delete()
+                for subject, schedule in parsed_items:
+                    EnlistmentBlockSubject.objects.create(block=block, subject=subject, schedule=schedule)
+
+                payment, _ = Payment.objects.get_or_create(
+                    enlistment=enlistment,
+                    defaults={
+                        "enlistment_amount": 0,
+                        "tuition_amount": 0,
+                        "amount": 0,
+                        "status": Payment.Status.PENDING,
+                    },
+                )
+                updates = []
+                payment.enlistment_amount = enlistment_amount
+                updates.append("enlistment_amount")
+                if enlistment.selected_block_id == block.id:
+                    payment.tuition_amount = block.tuition_amount
+                    payment.amount = block.tuition_amount
+                    updates.extend(["tuition_amount", "amount"])
+                if updates:
+                    payment.save(update_fields=list(dict.fromkeys(updates)))
+
+                messages.success(
+                    request,
+                    (
+                        f"Saved block '{block.name}' with {len(parsed_items)} subject schedule(s). "
+                        "Next step: adviser should click Approve Enlistment."
+                    ),
+                )
+                return redirect("enrollment:finance_subject_setup", pk=enlistment.pk)
+    else:
+        form = FinanceBlockSetupForm(
+            initial={
+                "enlistment_amount": payment.enlistment_amount if payment else 0,
+            }
+        )
+
+    existing_blocks = (
+        EnlistmentBlock.objects.filter(enlistment=enlistment)
+        .prefetch_related("subjects__subject")
+        .order_by("name")
+    )
+    return render(
+        request,
+        "enrollment/finance_subject_setup.html",
+        {
+            "enlistment": enlistment,
+            "form": form,
+            "existing_blocks": existing_blocks,
+            "payment": payment,
+        },
+    )
 
 @login_required
 @role_required("FINANCE")
@@ -832,6 +1122,24 @@ def finance_record_payment_view(request, pk):
         return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
 
     payment = getattr(enlistment, "payment", None)
+    if not payment:
+        messages.error(request, "No payment setup found for this enlistment.")
+        return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+    if payment.status != Payment.Status.SUBMITTED:
+        messages.error(request, "Waiting for student payment submission before finance approval.")
+        return redirect("enrollment:finance_dashboard")
+
+    remaining_enlistment_due = max((payment.enlistment_amount or 0) - (payment.enlistment_paid_amount or 0), 0)
+    remaining_tuition_due = max((payment.tuition_amount or 0) - (payment.tuition_paid_amount or 0), 0)
+
+    # Enforce flow: clear enlistment fee first, then tuition.
+    if not payment.enlistment_paid:
+        payment_kind = "ENLISTMENT"
+        due_amount = remaining_enlistment_due
+    else:
+        payment_kind = "TUITION"
+        due_amount = remaining_tuition_due
+
     if request.method == "POST":
         form = PaymentForm(request.POST)
         if form.is_valid():
@@ -841,6 +1149,7 @@ def finance_record_payment_view(request, pk):
                     enlistment,
                     amount=form.cleaned_data["amount"],
                     reference=form.cleaned_data.get("reference", ""),
+                    payment_kind=payment_kind,
                 )
                 if payment_kind == "ENLISTMENT" and fully_paid:
                     messages.success(request, "Enlistment fee fully paid. Tuition payment is now enabled.")
@@ -853,18 +1162,22 @@ def finance_record_payment_view(request, pk):
                     )
                 if overpayment > 0:
                     messages.info(request, f"Overpayment credit posted: {overpayment}.")
-                return redirect("enrollment:enlistment_detail", pk=enlistment.pk)
+                return redirect("enrollment:finance_dashboard")
             except Exception as e:
                 messages.error(request, str(e))
     else:
-        initial_amount = 0
-        if payment:
-            initial_amount = payment.submitted_amount if payment.submitted_amount > 0 else payment.amount
-        form = PaymentForm(initial={"amount": initial_amount, "reference": payment.reference if payment else ""})
+        initial_amount = payment.submitted_amount if payment.submitted_amount > 0 else due_amount
+        form = PaymentForm(initial={"amount": initial_amount, "reference": payment.reference})
     return render(
         request,
         "enrollment/finance_record_payment.html",
-        {"enlistment": enlistment, "form": form, "payment": payment},
+        {
+            "enlistment": enlistment,
+            "form": form,
+            "payment": payment,
+            "payment_kind": payment_kind,
+            "due_amount": due_amount,
+        },
     )
 
 # ---------------------- HISTORY ----------------------

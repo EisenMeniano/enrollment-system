@@ -37,6 +37,7 @@ urlpatterns = [
     # Finance
     path("finance/", views.finance_dashboard, name="finance_dashboard"),
     path("finance/review/<int:pk>/", views.finance_review_view, name="finance_review"),
+    path("finance/subjects/<int:pk>/", views.finance_subject_setup_view, name="finance_subject_setup"),
     path("finance/amount/<int:pk>/", views.finance_set_amount_view, name="finance_set_amount"),
     path("finance/payment/<int:pk>/", views.finance_record_payment_view, name="finance_record_payment"),
     path("finance/enrollment-toggle/", views.finance_toggle_enrollment, name="finance_toggle_enrollment"),

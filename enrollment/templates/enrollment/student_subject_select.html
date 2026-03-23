@@ -1,49 +1,58 @@
 {% extends "base.html" %}
-{% block title %}Select Subjects{% endblock %}
+{% block title %}Apply for Enlistment{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>Step 2: Subjects</h2>
-  <p class="subtle">Choose the subjects you want to enlist for this term.</p>
+  <h2>Apply for Enlistment (Choose Block/Schedule)</h2>
+  <p class="subtle">Select one block prepared by finance. Final tuition will appear after you save your block choice.</p>
   <div class="actions">
-    <span class="pill">Step 1: Student Details</span>
-    <span class="pill">Step 2: Subjects</span>
-    <span class="pill">Step 3: Status</span>
+    <span class="pill">Step 1: Enrollment</span>
+    <span class="pill">Step 2: Adviser and Finance Review</span>
+    <span class="pill">Step 3: Choose Block/Schedule</span>
   </div>
 </div>
 
 <div class="card" style="margin-top:14px;">
   <form method="post">
     {% csrf_token %}
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Code</th>
-          <th>Subject</th>
-          <th>Units</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for subject in subjects %}
-        <tr>
-          <td data-label="Select">
-            <input type="checkbox" name="subjects" value="{{ subject.id }}"
-              {% if subject.id in selected_ids %}checked{% endif %}>
-          </td>
-          <td data-label="Code">{{ subject.code }}</td>
-          <td data-label="Subject">{{ subject.title }}</td>
-          <td data-label="Units">{{ subject.units }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4">No subjects available. Add subjects in admin.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
+    {{ form.as_p }}
     <div class="actions" style="margin-top:12px;">
-      <button class="btn" type="submit">Save Subjects</button>
-      <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Skip for Now</a>
+      <button class="btn" type="submit">Save Block Choice</button>
+      <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>
     </div>
   </form>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h3>Available Blocks</h3>
+  {% for block in blocks %}
+    <div class="card" style="margin:10px 0;">
+      <p>
+        <strong>{{ block.name }}</strong>
+        {% if selected_block and selected_block.id == block.id %}
+          <span class="pill">Selected</span>
+        {% endif %}
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Subject</th>
+            <th>Schedule</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in block.subjects.all %}
+          <tr>
+            <td data-label="Code">{{ item.subject.code }}</td>
+            <td data-label="Subject">{{ item.subject.title }}</td>
+            <td data-label="Schedule">{{ item.schedule }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3">No schedules set.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
 </div>
 {% endblock %}

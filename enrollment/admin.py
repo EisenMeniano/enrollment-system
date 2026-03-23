@@ -5,6 +5,8 @@ from .models import (
     StudentFinanceAccount,
     PreviousTermSubject,
     Enlistment,
+    EnlistmentBlock,
+    EnlistmentBlockSubject,
     EnlistmentSubject,
     Payment,
     Category,
@@ -30,6 +32,8 @@ admin.site.register(EnrollmentWindow)
 admin.site.register(StudentProfileMenuItem)
 admin.site.register(SchoolYear)
 admin.site.register(Semester)
+admin.site.register(EnlistmentBlock)
+admin.site.register(EnlistmentBlockSubject)
 admin.site.register(AttendanceRecord)
 admin.site.register(ExamPermit)
 admin.site.register(ExamSchedule)

@@ -5,6 +5,15 @@
   <h2>Enter Student Payment</h2>
   <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
   <p><strong>Enlistment:</strong> #{{ enlistment.id }} ({{ enlistment.school_year }} - {{ enlistment.semester }})</p>
+  <p>
+    <strong>Current Approval Type:</strong>
+    {% if payment_kind == "ENLISTMENT" %}
+      Enlistment Fee
+    {% else %}
+      Tuition Fee
+    {% endif %}
+  </p>
+  <p><strong>Remaining Due for This Step:</strong> {{ due_amount }}</p>
   {% if payment %}
     <p><strong>Enlistment Fee Due:</strong> {{ payment.enlistment_amount }}</p>
     <p><strong>Tuition Fee Due:</strong> {{ payment.tuition_amount }}</p>
@@ -15,17 +24,9 @@
     {% endif %}
     <p><strong>Payment Status:</strong> {{ payment.get_status_display }}</p>
   {% endif %}
-  <p>Review and approve student payment. Tuition payment should be approved only after enlistment fee is fully paid.</p>
+  <p>Review and approve student payment. Tuition approval is locked until enlistment fee is fully paid.</p>
   <form method="post">
     {% csrf_token %}
-    <p>
-      <label for="max_downpayment_term"><strong>Maximum Downpayment Term</strong></label>
-      <select id="max_downpayment_term" name="max_downpayment_term">
-        <option value="PRELIM">Prelim</option>
-        <option value="MIDTERM">Midterm</option>
-        <option value="FINAL">Final</option>
-      </select>
-    </p>
     {{ form.as_p }}
     <button class="btn" type="submit">Approve Payment</button>
     <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>

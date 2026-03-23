@@ -4,20 +4,45 @@
 <div class="card">
   <h2>Enlistment #{{ enlistment.id }}</h2>
   <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
-  <p><strong>Category:</strong> {{ enlistment.category.name|default:"—" }}</p>
-  <p><strong>Program:</strong> {{ enlistment.program.name|default:"—" }}</p>
+  <p><strong>Category:</strong> {{ enlistment.category.name|default:"-" }}</p>
+  <p><strong>Program:</strong> {{ enlistment.program.name|default:"-" }}</p>
   <p><strong>Term:</strong> {{ enlistment.school_year }} - {{ enlistment.semester }}</p>
   <p><strong>Status:</strong> <span class="pill">{{ enlistment.get_status_display }}</span></p>
+  {% if enlistment.selected_block %}
+    <p><strong>Selected Block:</strong> {{ enlistment.selected_block.name }}</p>
+  {% endif %}
   {% if enlistment.payment %}
     <p><strong>Amount Due:</strong> {{ enlistment.payment.amount }}</p>
-    <p><strong>Payment Status:</strong> {{ enlistment.payment.get_status_display }}</p>
+    <p><strong>Payment Status:</strong>
+      {% if enlistment.payment.status == "SUBMITTED" %}
+        Pending payment
+      {% else %}
+        {{ enlistment.payment.get_status_display }}
+      {% endif %}
+    </p>
   {% endif %}
   {% if enlistment.hold_reason %}
     <p><strong>Note/Reason:</strong> {{ enlistment.hold_reason }}</p>
   {% endif %}
 
+  {% if enlistment.block_options.all %}
+    <h3>Finance Block Schedules</h3>
+    {% for block in enlistment.block_options.all %}
+      <div class="card" style="margin:10px 0;">
+        <p><strong>{{ block.name }}</strong> - Tuition: {{ block.tuition_amount }}</p>
+        <ul>
+          {% for item in block.subjects.all %}
+            <li>{{ item.subject.code }} - {{ item.subject.title }} - {{ item.schedule }}</li>
+          {% empty %}
+            <li>No schedule entries yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  {% endif %}
+
   {% if enlistment.next_subjects.all %}
-    <h3>Subjects for Next Semester</h3>
+    <h3>Selected Subjects</h3>
     <ul>
       {% for s in enlistment.next_subjects.all %}
         <li>{{ s.subject.code }} - {{ s.subject.title }}</li>
@@ -41,23 +66,40 @@
     {% endif %}
 
     {% if user.role == "FINANCE" and enlistment.status == "FINANCE_APPROVED" %}
-      <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
+      <a class="btn gray" href="{% url 'enrollment:finance_subject_setup' enlistment.id %}">Set Blocks / Schedules</a>
+      {% if enlistment.block_options.count > 0 and enlistment.payment and enlistment.payment.enlistment_amount > 0 %}
+        <p class="subtle">Finance setup complete. Next step: Adviser account must click Approve Enlistment.</p>
+      {% else %}
+        <p class="subtle">Set at least one block/schedule and enlistment fee, then adviser can approve enlistment.</p>
+      {% endif %}
     {% endif %}
+
     {% if user.role == "FINANCE" and enlistment.status == "APPROVED_FOR_PAYMENT" %}
-      <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
+      <a class="btn gray" href="{% url 'enrollment:finance_subject_setup' enlistment.id %}">Edit Blocks / Schedules</a>
       <a class="btn" href="{% url 'enrollment:finance_record_payment' enlistment.id %}">Approve Payment</a>
     {% endif %}
+
     {% if user.role == "FINANCE" and enlistment.status == "ENROLLED" %}
-      <a class="btn gray" href="{% url 'enrollment:finance_set_amount' enlistment.id %}">Set Amount</a>
+      <a class="btn gray" href="{% url 'enrollment:finance_subject_setup' enlistment.id %}">View Blocks / Schedules</a>
     {% endif %}
 
     {% if user.role == "ADVISER" and enlistment.status == "FINANCE_APPROVED" %}
-      <a class="btn" href="{% url 'enrollment:adviser_final_approve' enlistment.id %}">Final Approve + Add Subjects</a>
+      <a class="btn" href="{% url 'enrollment:adviser_final_approve' enlistment.id %}">Approve Enlistment</a>
       <a class="btn secondary" href="{% url 'enrollment:adviser_return' enlistment.id %}">Return / Adjust</a>
     {% endif %}
 
     {% if user.role == "STUDENT" and enlistment.status == "APPROVED_FOR_PAYMENT" %}
-      <a class="btn" href="{% url 'enrollment:student_pay' enlistment.id %}">Proceed to Payment</a>
+      {% if enlistment.payment and not enlistment.payment.enlistment_paid %}
+        <a class="btn secondary" href="{% url 'enrollment:student_enlistment_page' %}">Back</a>
+        <p class="subtle">After finance approves enlistment fee, Apply for Enlistment will open.</p>
+      {% else %}
+        <a class="btn secondary" href="{% url 'enrollment:student_subject_select' enlistment.id %}">Apply for Enlistment</a>
+        {% if enlistment.selected_block %}
+          <a class="btn" href="{% url 'enrollment:student_pay' enlistment.id %}">Proceed to Payment</a>
+        {% else %}
+          <p class="subtle">Choose your block/schedule first to reveal final tuition fee.</p>
+        {% endif %}
+      {% endif %}
     {% endif %}
   </div>
 </div>

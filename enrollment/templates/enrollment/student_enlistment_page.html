@@ -8,28 +8,39 @@
     <div class="section-card">
       <h3 class="section-title">Student Enlistment</h3>
       <div class="actions" style="margin-bottom:8px;">
-        <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Apply for Enlistment</a>
+        <a class="btn" href="{% url 'enrollment:enlistment_create' %}">Enrollment</a>
+        {% if apply_enlistment %}
+          <a class="btn secondary" href="{% url 'enrollment:student_subject_select' apply_enlistment.id %}">Apply for Enlistment</a>
+        {% else %}
+          <button class="btn secondary" type="button" disabled style="opacity:.65; cursor:not-allowed;">Apply for Enlistment</button>
+        {% endif %}
       </div>
+      {% if apply_enlistment_reason %}
+        <p class="subtle">{{ apply_enlistment_reason }}</p>
+      {% endif %}
       <table>
         <thead>
-          <tr><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th>Actions</th></tr>
+          <tr><th>Category</th><th>Program</th><th>Term</th><th>Status</th><th>Selected Block</th><th>Actions</th></tr>
         </thead>
         <tbody>
           {% for e in enlistments %}
           <tr>
-            <td data-label="Category">{{ e.category.name|default:"—" }}</td>
-            <td data-label="Program">{{ e.program.name|default:"—" }}</td>
+            <td data-label="Category">{{ e.category.name|default:"-" }}</td>
+            <td data-label="Program">{{ e.program.name|default:"-" }}</td>
             <td data-label="Term">{{ e.school_year }} - {{ e.semester }}</td>
             <td data-label="Status"><span class="pill">{{ e.get_status_display }}</span></td>
+            <td data-label="Selected Block">{{ e.selected_block.name|default:"-" }}</td>
             <td data-label="Actions">
               <a class="btn gray" href="{% url 'enrollment:enlistment_detail' e.id %}">View</a>
-              {% if e.status == "APPROVED_FOR_PAYMENT" %}
+              {% if e.status == "APPROVED_FOR_PAYMENT" and e.payment and not e.payment.enlistment_paid %}
+                <a class="btn" href="{% url 'enrollment:student_pay' e.id %}?fee_kind=ENLISTMENT&amount={{ e.payment.enlistment_amount|floatformat:2 }}&reference=CASH-DOWNPAYMENT">Pay Enlistment Fee</a>
+              {% elif e.status == "APPROVED_FOR_PAYMENT" and e.selected_block %}
                 <a class="btn" href="{% url 'enrollment:student_pay' e.id %}">Proceed to Payment</a>
               {% endif %}
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="5">No enlistments yet.</td></tr>
+          <tr><td colspan="6">No enlistments yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

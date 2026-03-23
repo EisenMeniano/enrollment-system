@@ -2,13 +2,26 @@
 {% block title %}Final Approve{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>Final Approval — Enlistment #{{ enlistment.id }}</h2>
+  <h2>Final Approval - Enlistment #{{ enlistment.id }}</h2>
   <p><strong>Student:</strong> {{ enlistment.student.student_number }}</p>
   <p><strong>Finance Status:</strong> {{ enlistment.get_status_display }}</p>
+  <p><strong>Finance-Configured Blocks:</strong> {{ available_blocks|length }}</p>
+  <p class="subtle">Approving enlistment opens the enlistment-fee payment step for the student.</p>
+
+  {% for block in available_blocks %}
+    <div class="card" style="margin:10px 0;">
+      <p><strong>{{ block.name }}</strong> - Tuition: {{ block.tuition_amount }}</p>
+      <ul>
+        {% for item in block.subjects.all %}
+          <li>{{ item.subject.code }} - {{ item.subject.title }} - {{ item.schedule }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+
   <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn" type="submit">Approve & Add Subjects</button>
+    <button class="btn" type="submit">Approve Enlistment</button>
     <a class="btn secondary" href="{% url 'enrollment:enlistment_detail' enlistment.id %}">Back</a>
   </form>
 </div>

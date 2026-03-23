@@ -91,6 +91,13 @@ class Enlistment(models.Model):
     program = models.ForeignKey(
         Program, on_delete=models.PROTECT, null=True, blank=True, related_name="enlistments"
     )
+    selected_block = models.ForeignKey(
+        "EnlistmentBlock",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="selected_by_enlistments",
+    )
     school_year = models.CharField(max_length=20)
     semester = models.CharField(max_length=20)
     status = models.CharField(max_length=40, choices=Status.choices, default=Status.SUBMITTED)
@@ -115,6 +122,42 @@ class Enlistment(models.Model):
 
     def __str__(self):
         return f"{self.student} {self.school_year} {self.semester} ({self.status})"
+
+
+class EnlistmentBlock(models.Model):
+    enlistment = models.ForeignKey(Enlistment, on_delete=models.CASCADE, related_name="block_options")
+    name = models.CharField(max_length=120)
+    tuition_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_enlistment_blocks",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("enlistment", "name")
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.enlistment} [{self.name}]"
+
+
+class EnlistmentBlockSubject(models.Model):
+    block = models.ForeignKey(EnlistmentBlock, on_delete=models.CASCADE, related_name="subjects")
+    subject = models.ForeignKey(Subject, on_delete=models.PROTECT)
+    schedule = models.CharField(max_length=120)
+
+    class Meta:
+        unique_together = ("block", "subject", "schedule")
+        ordering = ["subject__code", "schedule"]
+
+    def __str__(self):
+        return f"{self.block.name} - {self.subject.code} ({self.schedule})"
+
 
 class EnlistmentSubject(models.Model):
     enlistment = models.ForeignKey(Enlistment, on_delete=models.CASCADE, related_name="next_subjects")
